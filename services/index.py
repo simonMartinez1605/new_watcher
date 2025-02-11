@@ -11,45 +11,49 @@ load_dotenv()
 
 save_pdf = os.getenv('SAVE_PDF')
 
+#Funcion para poder obtener el nombre y numero de Alien 
 def indexing(pdf):
     pages = convert_from_path(pdf)
     print(f"Review documents")
 
-    for i in range(0, len(pages), 2):
-        page1 = pages[i]
-        page2 = pages[i + 1] if i + 1 < len(pages) else None
+    try: 
+        for i in range(0, len(pages), 2):
+            page1 = pages[i]
+            page2 = pages[i + 1] if i + 1 < len(pages) else None
 
-        data_ocr_page1 = pytesseract.image_to_data(page1, output_type=pytesseract.Output.DICT)
-        doc_type = form(data_ocr_page1, page1)
+            data_ocr_page1 = pytesseract.image_to_data(page1, output_type=pytesseract.Output.DICT)
+            doc_type = form(data_ocr_page1, page1)
 
-        if doc_type == True:
-            name = I_485(data_ocr_page1, page1)
-            print(f"Page {i+1}: Indexed")
+            if doc_type == True:
+                name = I_485(data_ocr_page1, page1)
+                print(f"Page {i+1}: Indexed")
 
-        # Crea un nuevo PdfWriter para cada par de páginas
-        pdf_writer = PdfWriter()
+            # Crea un nuevo PdfWriter para cada par de páginas
+            pdf_writer = PdfWriter()
 
-        # Guarda la primera página en el PDF
-        page1_path = f"{save_pdf}{name}.pdf" 
-        page1.save(page1_path, "PDF")
-        pdf_writer.append(page1_path)
+            # Guarda la primera página en el PDF
+            page1_path = f"{save_pdf}{name['name']}.pdf" 
+            page1.save(page1_path, "PDF")
+            pdf_writer.append(page1_path)
 
+            if page2:
+                # Guarda la segunda página en el PDF
+                page2_path = f"{save_pdf}{name['name']}.pdf" 
+                page2.save(page2_path, "PDF")
+                pdf_writer.append(page2_path)
+                print(f"Page {i+2}: Saved")
+    
+            # Guarda el PDF combinado para este par de páginas
+            output_pdf_path = f"{save_pdf}{name['name']}.pdf"
+            with open(output_pdf_path, "wb") as output_pdf:
+                pdf_writer.write(output_pdf)
 
-        if page2:
-            # Guarda la segunda página en el PDF
-            page2_path = f"{save_pdf}{name}.pdf" 
-            page2.save(page2_path, "PDF")
-            pdf_writer.append(page2_path)
-            print(f"Page {i+2}: Saved")
- 
-        # Guarda el PDF combinado para este par de páginas
-        output_pdf_path = f"{save_pdf}{name}.pdf"
-        with open(output_pdf_path, "wb") as output_pdf:
-            pdf_writer.write(output_pdf)
+            ocr(output_pdf_path) 
 
-        ocr(output_pdf_path) 
+            print(f"Combined PDF saved as {output_pdf_path}")
+    except Exception as e: 
+        print(f"Error in indexing module : {e}")
 
-        print(f"Combined PDF saved as {output_pdf_path}")
 
 if __name__ == "__main__":
     if not os.path.exists(save_pdf):
