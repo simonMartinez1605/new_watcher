@@ -1,99 +1,130 @@
-import msal
-import requests
-import os
+from shareplum import Site
+from shareplum import Office365
+from shareplum.site import Version 
+import requests 
+import json 
+import os 
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv() 
 
-client_id = os.getenv('CLIENT_ID')
-client_secret = os.getenv('CLIENT_SECRET')
-tenant_id = os.getenv('TENANT_ID')
-drive_id = os.getenv('DRIVER_ID') 
-authority = f"https://login.microsoftonline.com/{tenant_id}"
-scope = ["https://graph.microsoft.com/.default"]
+sharepoint_url = os.getenv('SHARE_POINT_URL')
+username = os.getenv('USER_NAME')
+password =  os.getenv('PASSWORD')
+site_url = os.getenv('SITE_URL')
+library_name = os.getenv('LIBRARY_NAME')
 
-# Conexión con el SharePoint para obtener los Alien number
-app = msal.ConfidentialClientApplication(client_id, authority=authority, client_credential=client_secret)
-result = app.acquire_token_for_client(scopes=scope)
+authcookie = Office365(sharepoint_url, username=username, password=password).GetCookies()
+site = Site(f"{sharepoint_url}{site_url}", version=Version.v365, authcookie=authcookie)
 
-# Autenticación de los tokens de acceso
-
-def get_drive_id(): 
-    if "access_token" in result:
-        access_token = result["access_token"]
-        site_url = "https://graph.microsoft.com/v1.0/sites/taylorleelaw.sharepoint.com:/sites/prueba"
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Accept": "application/json"
-        }
-        response = requests.get(site_url, headers=headers)
-
-        if response.status_code == 200:
-            data = response.json()
-            print(data)
-            print(f"Site title: {data['displayName']}")
-
-            # Obtener documentos de una biblioteca de documentos
-            drive_url = f"https://graph.microsoft.com/v1.0/sites/{data['id']}/pages"
-            drive_response = requests.get(drive_url, headers=headers)
-            if drive_response.status_code == 200:
-                drives = drive_response.json()
-                for drive in drives:
-                    print(drive) 
-                    return drive['id']
-            else:
-                print(f"Failed to get drives: {drive_response.status_code} - {drive_response.text}")
-        else:
-            print(f"Failed to connect: {response.status_code} - {response.text}")
+# Función para obtener el X-RequestDigest
+def get_request_digest():
+    url = f"{sharepoint_url}{site_url}/_api/contextinfo"
+    headers = {
+        "Accept": "application/json;odata=verbose",
+        "Content-Type": "application/json;odata=verbose"
+    }
+    response = requests.post(url, cookies=authcookie, headers=headers)
+    if response.status_code == 200:
+        return response.json()["d"]["GetContextWebInformation"]["FormDigestValue"]
     else:
-        print("Failed to obtain access token")
-
-
-def upload_file_to_sharepoint(local_file_path, file_name, alien_number):
-    try: 
+        print(f"Error to obtain X-RequestDigest: {response.text}")
+        return None
     
-        if "access_token" in result:
-            access_token = result["access_token"]
-            headers = {
-                "Authorization": f"Bearer {access_token}",
-                "Accept": "application/json"
-            }
-            # URL de la biblioteca de documentos donde se creará el archivo
-            items_url = f"https://graph.microsoft.com/v1.0/drives/{drive_id}/root/children"
+# Función para obtener el tipo de entidad de una lista de SharePoint
+def get_list_item_type(list_name):
+    url = f"{sharepoint_url}{site_url}/_api/web/lists/getbytitle('{list_name}')"
+    headers = {
+        "Accept": "application/json;odata=verbose",
+        "Content-Type": "application/json;odata=verbose"
+    }
+    response = requests.get(url, cookies=authcookie, headers=headers)
+    if response.status_code == 200:
+        data = response.json()
+        return data["d"]["ListItemEntityTypeFullName"]
+    else:
+        print(f"Error al obtener el tipo de entidad: {response.text}")
+        return None
 
-            # Datos del archivo a crear
-            file_data = {
-                "@microsoft.graph.conflictBehavior": "rename",  # Renombrar el archivo si ya existe
-                "name": file_name, # Nombre del archivo
-                "file": {}
-            }
-            # Crear el archivo
-            create_response = requests.post(items_url, headers=headers, json=file_data)
-            if create_response.status_code == 201:
-                item_id = create_response.json().get("id")  # Obtener el ID del archivo creado
-                upload_url = f"https://graph.microsoft.com/v1.0/drives/{drive_id}/items/{item_id}/content"
-                with open(local_file_path, 'rb') as file:
-                    #Actualizar el archivo creado anteriormente 
-                    file_content = file.read()
-                    headers["Content-Type"] = "application/pdf"
-                    upload_response = requests.put(upload_url, headers=headers, data=file_content)
-                    if upload_response.status_code == 200 or upload_response.status_code == 201:
-                        print(f"File '{file_name}' uploaded successfully.")
-                    else:
-                        print(f"Failed to upload file content: {upload_response.status_code} - {upload_response.text}")
-            else:   
-                print(f"Failed to create file: {create_response.status_code} - {create_response.text}")
+
+# Función para obtener el ID de un archivo recién subido
+def get_file_id(list_name, file_name):
+    """
+    Obtiene el ID del archivo recién subido.
+    """
+    # Consulta la lista/biblioteca para obtener el ID del archivo
+    url = f"{sharepoint_url}{site_url}/_api/web/lists/getbytitle('{list_name}')/items"
+    params = {
+        "$filter": f"FileLeafRef eq '{file_name}'",  # Filtra por el nombre del archivo
+        "$select": "Id"  # Solo obtén el campo ID
+    }
+    headers = {
+        "Accept": "application/json;odata=verbose",
+        "Content-Type": "application/json;odata=verbose"
+    }
+    response = requests.get(url, params=params, cookies=authcookie, headers=headers)
+
+    if response.status_code == 200:
+        data = response.json()
+        if data["d"]["results"]:
+            return data["d"]["results"][0]["Id"]  # Devuelve el ID del primer resultado
         else:
-            print("Failed to obtain access token")
-    except Exception as e: 
-        print(f"Error for upload file to sharepoint: {e}")
+            print("❌ No se encontró el archivo en la lista/biblioteca.")
+            return None
+    else:
+        print(f"❌ Error al obtener el ID del archivo: {response.text}")
+        return None
+    
+# Función para subir archivo y actualizar metadatos
+def sharepoint(file_path, file_name, alien_number):
+    # 📂 1. Subir el archivo
+    folder = site.Folder(library_name)
+    with open(file_path, "rb") as file:
+        folder.upload_file(file.read(), file_name)
+    print("✅ Documents uploaded successfully.")
+
+    # 📄 2. Obtener el Request Digest
+    digest = get_request_digest()
+    if not digest:
+        print("❌Cant get RequestDigest.")
+        return
+
+    # 🛠️ 3. Obtener el tipo de entidad de la lista
+    list_name = "Documents"  # Nombre de la lista o biblioteca
+    item_type = get_list_item_type(list_name)
+    if not item_type:
+        print("❌ cant get the entity type.")
+        return
+
+    # 🔍 4. Obtener el file_id dinámicamente
+    file_id = get_file_id(list_name, file_name)
+    if not file_id:
+        print("❌ No se pudo obtener el ID del archivo.")
+        return
+
+    update_url = f"{sharepoint_url}{site_url}/_api/web/lists/getbytitle('{list_name}')/items({file_id})"
+
+    headers = {
+        "Accept": "application/json;odata=verbose",
+        "Content-Type": "application/json;odata=verbose",
+        "X-RequestDigest": digest,  # Usa el digest que ya obtuviste
+        "IF-MATCH": "*",
+        "X-HTTP-Method": "MERGE"
+    }
+
+    metadata = {
+        "__metadata": {"type": item_type},  # Usa el tipo de entidad obtenido
+        "AlienNumber": alien_number  # Usa el nombre interno correcto
+    }
+
+    response = requests.post(update_url, data=json.dumps(metadata), cookies=authcookie, headers=headers)
+
+    if response.status_code in [200, 204]:
+        print(f"✅ Metadata upload successfully.") 
+    else:
+        print(f"❌ Error to upload metadata: {response.text}")
 
 
-# Ruta del archivo local y nombre del archivo en SharePoint
-local_file_path = "c:/Users/SimonMartinez/Documents/Simon/View Folder/OCR/Done/TORRES SUAREZ, ROXANA VANESSA.pdf" 
-file_name = "simon.pdf"
-
-if __name__=="__main__": 
-
-    upload_file_to_sharepoint(local_file_path, file_name, "213135161") 
-    # get_drive_id()
+if __name__ == "__main__":
+    doc = "c:/Users/SimonMartinez/Documents/Simon/View Folder/OCR/Done/review.pdf"
+    sharepoint(doc, "archivo.pdf", "245-282-251") 

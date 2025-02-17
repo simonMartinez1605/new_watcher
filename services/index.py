@@ -1,10 +1,9 @@
 from pdf2image import convert_from_path
 from PyPDF2 import PdfWriter
-from PIL import Image
 from models.models import form, I_485
 from services.ocr import ocr 
 from dotenv import load_dotenv
-from services.conection import upload_file_to_sharepoint 
+from services.conection import sharepoint 
 import os
 import pytesseract
 
@@ -51,7 +50,7 @@ def indexing(pdf):
 
             ocr(output_pdf_path) 
 
-            upload_file_to_sharepoint(output_pdf_path ,f"{result['name']}.pdf", result['alien_number']) 
+            sharepoint(output_pdf_path ,f"{result['name']}.pdf", result['alien_number']) 
 
             print(f"Combined PDF saved as {output_pdf_path}")
     except Exception as e: 
