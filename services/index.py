@@ -11,6 +11,7 @@ load_dotenv()
 
 save_pdf = os.getenv('SAVE_PDF')
 
+save_pdf = save_pdf.replace("\\", "/") 
 #Funcion para poder obtener el nombre y numero de Alien 
 def indexing(pdf):
     pages = convert_from_path(pdf)

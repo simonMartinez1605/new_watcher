@@ -1,0 +1,10 @@
+ocrmypdf==16.9.0
+ollama==0.4.7
+pdf2image==1.17.0
+Pillow==11.1.0
+PyPDF2==3.0.1
+pytesseract==0.3.13
+python-dotenv==1.0.1
+Requests==2.32.3
+SharePlum==0.5.1
+watchdog==6.0.0
