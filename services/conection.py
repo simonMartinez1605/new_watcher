@@ -13,6 +13,7 @@ username = os.getenv('USER_NAME')
 password =  os.getenv('PASSWORD')
 site_url = os.getenv('SITE_URL')
 library_name = os.getenv('LIBRARY_NAME')
+list_name = os.getenv('LIST_NAME')
 
 authcookie = Office365(sharepoint_url, username=username, password=password).GetCookies()
 site = Site(f"{sharepoint_url}{site_url}", version=Version.v365, authcookie=authcookie)
@@ -24,12 +25,14 @@ def get_request_digest():
         "Accept": "application/json;odata=verbose",
         "Content-Type": "application/json;odata=verbose"
     }
-    response = requests.post(url, cookies=authcookie, headers=headers)
-    if response.status_code == 200:
-        return response.json()["d"]["GetContextWebInformation"]["FormDigestValue"]
-    else:
-        print(f"Error to obtain X-RequestDigest: {response.text}")
-        return None
+    try: 
+        response = requests.post(url, cookies=authcookie, headers=headers)
+        response.raise_for_status() 
+        if response.status_code == 200:
+            return response.json()["d"]["GetContextWebInformation"]["FormDigestValue"]
+    except requests.exceptions.HTTPError as http_err:
+        print(f"HTTP error occurred: {http_err}") 
+    
     
 # Función para obtener el tipo de entidad de una lista de SharePoint
 def get_list_item_type(list_name):
@@ -38,14 +41,14 @@ def get_list_item_type(list_name):
         "Accept": "application/json;odata=verbose",
         "Content-Type": "application/json;odata=verbose"
     }
-    response = requests.get(url, cookies=authcookie, headers=headers)
-    if response.status_code == 200:
-        data = response.json()
-        return data["d"]["ListItemEntityTypeFullName"]
-    else:
-        print(f"Error al obtener el tipo de entidad: {response.text}")
-        return None
+    try : 
 
+        response = requests.get(url, cookies=authcookie, headers=headers)
+        response.raise_for_status() 
+        if response.status_code == 200:
+            return response.json()["d"]["ListItemEntityTypeFullName"]
+    except requests.exceptions.HTTPError as http_err:
+        print(f"HTTP error occurred: {http_err}") 
 
 # Función para obtener el ID de un archivo recién subido
 def get_file_id(list_name, file_name):
@@ -62,18 +65,22 @@ def get_file_id(list_name, file_name):
         "Accept": "application/json;odata=verbose",
         "Content-Type": "application/json;odata=verbose"
     }
-    response = requests.get(url, params=params, cookies=authcookie, headers=headers)
+    try: 
 
-    if response.status_code == 200:
-        data = response.json()
-        if data["d"]["results"]:
-            return data["d"]["results"][0]["Id"]  # Devuelve el ID del primer resultado
+        response = requests.get(url, params=params, cookies=authcookie, headers=headers)
+        response.raise_for_status() 
+        if response.status_code == 200:
+            data = response.json()
+            if data["d"]["results"]:
+                return data["d"]["results"][0]["Id"]  # Devuelve el ID del primer resultado
+            else:
+                print("❌ No se encontró el archivo en la lista/biblioteca.")
+                return None
         else:
-            print("❌ No se encontró el archivo en la lista/biblioteca.")
+            print(f"❌ Error al obtener el ID del archivo: {response.text}")
             return None
-    else:
-        print(f"❌ Error al obtener el ID del archivo: {response.text}")
-        return None
+    except requests.exceptions.HTTPError as http_err:
+        print(f"HTTP error occurred: {http_err}")
     
 # Función para subir archivo y actualizar metadatos
 def sharepoint(file_path, file_name, alien_number):
@@ -90,7 +97,6 @@ def sharepoint(file_path, file_name, alien_number):
         return
 
     # 🛠️ 3. Obtener el tipo de entidad de la lista
-    list_name = "Documents"  # Nombre de la lista o biblioteca
     item_type = get_list_item_type(list_name)
     if not item_type:
         print("❌ cant get the entity type.")
@@ -107,22 +113,24 @@ def sharepoint(file_path, file_name, alien_number):
     headers = {
         "Accept": "application/json;odata=verbose",
         "Content-Type": "application/json;odata=verbose",
-        "X-RequestDigest": digest,  # Usa el digest que ya obtuviste
+        "X-RequestDigest": digest,  
         "IF-MATCH": "*",
         "X-HTTP-Method": "MERGE"
     }
 
     metadata = {
-        "__metadata": {"type": item_type},  # Usa el tipo de entidad obtenido
-        "AlienNumber": alien_number  # Usa el nombre interno correcto
+        "__metadata": {"type": item_type},  
+        "AlienNumber": alien_number  
     }
-
-    response = requests.post(update_url, data=json.dumps(metadata), cookies=authcookie, headers=headers)
-
-    if response.status_code in [200, 204]:
-        print(f"✅ Metadata upload successfully.") 
-    else:
-        print(f"❌ Error to upload metadata: {response.text}")
+    try: 
+        response = requests.post(update_url, data=json.dumps(metadata), cookies=authcookie, headers=headers)
+        response.raise_for_status() 
+        if response.status_code in [200, 204]:
+            print(f"✅ Metadata upload successfully.") 
+        else:
+            print(f"❌ Error to upload metadata: {response.text}")
+    except requests.exceptions.HTTPError as http_err:  
+        print(f"HTTP error occurred: {http_err}")
 
 
 if __name__ == "__main__":
