@@ -1,6 +1,6 @@
 from pdf2image import convert_from_path
 from PyPDF2 import PdfWriter
-from models.models import form, I_485
+from models.models import Model
 from services.ocr import ocr 
 from dotenv import load_dotenv
 from services.conection import sharepoint 
@@ -23,10 +23,10 @@ def indexing(pdf):
             page2 = pages[i + 1] if i + 1 < len(pages) else None
 
             data_ocr_page1 = pytesseract.image_to_data(page1, output_type=pytesseract.Output.DICT)
-            doc_type = form(data_ocr_page1, page1)
+            doc_type = Model(data_ocr_page1, page1).search_form() 
 
             if doc_type == True:
-                result = I_485(data_ocr_page1, page1)
+                result = Model(data_ocr_page1, page1).search_I_485() 
                 print(f"Page {i+1}: Indexed")
 
             # Crea un nuevo PdfWriter para cada par de páginas

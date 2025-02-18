@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv() 
 
+# Variables de entorno
 sharepoint_url = os.getenv('SHARE_POINT_URL')
 username = os.getenv('USER_NAME')
 password =  os.getenv('PASSWORD')
@@ -15,11 +16,12 @@ site_url = os.getenv('SITE_URL')
 library_name = os.getenv('LIBRARY_NAME')
 list_name = os.getenv('LIST_NAME')
 
+# Authentificacion a SharePoint
 authcookie = Office365(sharepoint_url, username=username, password=password).GetCookies()
 site = Site(f"{sharepoint_url}{site_url}", version=Version.v365, authcookie=authcookie)
 
 # Función para obtener el X-RequestDigest
-def get_request_digest():
+def get_request_digest() -> str:
     url = f"{sharepoint_url}{site_url}/_api/contextinfo"
     headers = {
         "Accept": "application/json;odata=verbose",
@@ -33,9 +35,8 @@ def get_request_digest():
     except requests.exceptions.HTTPError as http_err:
         print(f"HTTP error occurred: {http_err}") 
     
-    
 # Función para obtener el tipo de entidad de una lista de SharePoint
-def get_list_item_type(list_name):
+def get_list_item_type(list_name)-> str:
     url = f"{sharepoint_url}{site_url}/_api/web/lists/getbytitle('{list_name}')"
     headers = {
         "Accept": "application/json;odata=verbose",
@@ -51,7 +52,7 @@ def get_list_item_type(list_name):
         print(f"HTTP error occurred: {http_err}") 
 
 # Función para obtener el ID de un archivo recién subido
-def get_file_id(list_name, file_name):
+def get_file_id(list_name, file_name) -> str:
     """
     Obtiene el ID del archivo recién subido.
     """
