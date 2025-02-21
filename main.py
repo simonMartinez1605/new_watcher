@@ -5,6 +5,7 @@ from services.ocr import ocr
 from services.index import indexing 
 import os
 import time 
+import random 
 
 load_dotenv() 
 
@@ -21,7 +22,7 @@ class Event_manager(FileSystemEventHandler):
 
             indexing(path_pdf) 
 
-            os.rename(path_pdf, f"C:/Users/SimonMartinez/Documents/Simon/View Folder/OCR/Done/review.pdf")    
+            os.rename(path_pdf, f"C:/Users/SimonMartinez/Documents/Simon/View Folder/OCR/Done/{random.randint(1,10000)}.pdf")
 
 def monitor_folder(path): 
     manage = Event_manager()
