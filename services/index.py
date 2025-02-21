@@ -13,7 +13,7 @@ save_pdf = os.getenv('SAVE_PDF')
 
 save_pdf = save_pdf.replace("\\", "/") 
 
-#Reestructuracion de codigo
+#Reestructuracion de codigo para la funcion indexing
 def indexing(pdf): 
     pages = convert_from_path(pdf)
 
