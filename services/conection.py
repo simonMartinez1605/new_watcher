@@ -43,7 +43,6 @@ def get_list_item_type(list_name)-> str:
         "Content-Type": "application/json;odata=verbose"
     }
     try : 
-
         response = requests.get(url, cookies=authcookie, headers=headers)
         response.raise_for_status() 
         if response.status_code == 200:
@@ -67,7 +66,6 @@ def get_file_id(list_name, file_name) -> str:
         "Content-Type": "application/json;odata=verbose"
     }
     try: 
-
         response = requests.get(url, params=params, cookies=authcookie, headers=headers)
         response.raise_for_status() 
         if response.status_code == 200:
@@ -132,7 +130,6 @@ def sharepoint(file_path, file_name, alien_number):
             print(f"❌ Error to upload metadata: {response.text}")
     except requests.exceptions.HTTPError as http_err:  
         print(f"HTTP error occurred: {http_err}")
-
 
 if __name__ == "__main__":
     doc = "c:/Users/SimonMartinez/Documents/Simon/View Folder/OCR/Done/review.pdf"

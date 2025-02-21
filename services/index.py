@@ -27,7 +27,6 @@ def indexing(pdf):
 
             doc_type = Model(data_ocr_page, page1).find() 
 
-            
             page_path = f"{save_pdf}{doc_type}.pdf"  
             page1.save(page_path, "PDF") 
             pdf_save.append(page_path) 

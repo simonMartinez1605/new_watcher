@@ -1,5 +1,4 @@
 import pytesseract 
-import re 
 
 class Model(): 
     def __init__(self, data_ocr, item): 
@@ -46,10 +45,9 @@ class Model():
                     name = pytesseract.image_to_string(region)
 
                     name = name.replace("\n", "")
-
                     name = name.replace("/", "")
 
-                    print(f"Document name {name}") 
+                    print(f"Document name: {name}") 
 
                     region_x = x + 145
                     region_y = y - 1 
@@ -61,19 +59,15 @@ class Model():
                     alien_number = pytesseract.image_to_string(region)
 
                     alien_number = alien_number.replace("\n", "")
-
                     alien_number = alien_number.replace("/", "")
-
                     alien_number = alien_number.replace(" ", "")
 
-                    print(f"Alien number {alien_number}") 
+                    print(f"Alien number: {alien_number}") 
 
                     return {
                         'name':name, 
                         'alien_number':alien_number 
-                    } 
-
-                    
+                    }   
         except Exception as e: 
             print(f"Error in search model: {e}")
             return False
