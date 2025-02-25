@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from services.conection import sharepoint 
 import os
 import pytesseract
+import shutil
 
 load_dotenv()
 
@@ -39,13 +40,14 @@ def indexing(pdf):
                 print(f"Combined PDF saved as {output_pdf_path}") 
 
                 ocr(output_pdf_path)
+                print(f"OCR completed for {output_pdf_path}") 
 
                 sharepoint(output_pdf_path, f"{result['name']}.pdf", result['alien_number']) 
 
                 pdf_save = PdfWriter() 
-
     except Exception as e: 
         print(f"Error in indexing module : {e}")
+        shutil.move(pdf, f"C:/Users/SimonMartinez/Documents/Simon/View Folder/OCR/Failed/{os.path.basename(pdf)}")
 
 if __name__ == "__main__":
     indexing(save_pdf)   
