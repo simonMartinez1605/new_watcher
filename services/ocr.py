@@ -1,5 +1,5 @@
 import ocrmypdf
-
+#Funcion para realizar OCR a los documentos 
 def ocr(my_path): 
     try: 
         ocrmypdf.ocr(

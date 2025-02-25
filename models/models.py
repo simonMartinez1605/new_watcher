@@ -5,7 +5,7 @@ class Model():
         self.data_ocr = data_ocr 
         self.item = item 
 
-    def find(self): 
+    def find_42B(self): 
         try: 
             for i, word in enumerate(self.data_ocr['text']): 
 
@@ -46,6 +46,7 @@ class Model():
 
                     name = name.replace("\n", "")
                     name = name.replace("/", "")
+                    name = name.replace("|", "")
 
                     print(f"Document name: {name}") 
 
