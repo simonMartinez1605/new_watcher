@@ -64,7 +64,7 @@ def indexing(pdf, option, path):
                     print("Criminal case") 
     except Exception as e: 
         print(f"Error in indexing module : {e}")
-        shutil.move(pdf, f"C:/Users/SimonMartinez/Documents/Simon/View Folder/OCR/Failed/{os.path.basename(pdf)}")
+        shutil.move(pdf, f"{path}\Errors\{os.path.basename(pdf)}")
 
 if __name__ == "__main__":
     indexing("save_pdf")   
