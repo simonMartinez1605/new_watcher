@@ -1,6 +1,5 @@
 from dotenv import load_dotenv 
 from services.index import indexing 
-from rich.spinner import Spinner
 from rich.console import Console
 import smbclient
 import os
@@ -46,7 +45,7 @@ def monitor_folder(folder):
             #Iteración sobre los documentos en la carpeta
             for doc in acutal_folder: 
                 if doc.lower().endswith('.pdf'): 
-                    doc_path = f"{folder.replace("\\","/")}/{doc}"  
+                    doc_path = "{}/{}".format(folder.replace("\\", "/"), doc) 
 
                     if wait_doc(doc_path, 5, 5): 
                         print(f"New doc found in {folder}: {doc_path}")
