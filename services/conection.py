@@ -1,12 +1,12 @@
 from shareplum import Site
 from shareplum import Office365
-from shareplum.site import Version 
-import requests 
-import json 
-import os 
+from shareplum.site import Version
+import requests
+import json
+import os
 from dotenv import load_dotenv
 
-load_dotenv() 
+load_dotenv()
 
 # Variables de entorno
 sharepoint_url = os.getenv('SHARE_POINT_URL')
@@ -22,13 +22,13 @@ def get_request_digest(site_name, authcookie) -> str:
         "Accept": "application/json;odata=verbose",
         "Content-Type": "application/json;odata=verbose"
     }
-    try: 
+    try:
         response = requests.post(url, cookies=authcookie, headers=headers)
-        response.raise_for_status() 
+        response.raise_for_status()
         if response.status_code == 200:
             return response.json()["d"]["GetContextWebInformation"]["FormDigestValue"]
     except requests.exceptions.HTTPError as http_err:
-        print(f"HTTP error occurred: {http_err}") 
+        print(f"HTTP error occurred: {http_err}")
     
 # Función para obtener el tipo de entidad de una lista de SharePoint
 def get_list_item_type(list_name, site_name,authcookie)-> str:
@@ -37,13 +37,13 @@ def get_list_item_type(list_name, site_name,authcookie)-> str:
         "Accept": "application/json;odata=verbose",
         "Content-Type": "application/json;odata=verbose"
     }
-    try : 
+    try :
         response = requests.get(url, cookies=authcookie, headers=headers)
-        response.raise_for_status() 
+        response.raise_for_status()
         if response.status_code == 200:
             return response.json()["d"]["ListItemEntityTypeFullName"]
     except requests.exceptions.HTTPError as http_err:
-        print(f"HTTP error occurred: {http_err}") 
+        print(f"HTTP error occurred: {http_err}")
 
 # Función para obtener el ID de un archivo recién subido
 def get_file_id(list_name, file_name, site_name,authcookie) -> str:
@@ -62,7 +62,7 @@ def get_file_id(list_name, file_name, site_name,authcookie) -> str:
     }
     try: 
         response = requests.get(url, params=params, cookies=authcookie, headers=headers)
-        response.raise_for_status() 
+        response.raise_for_status()
         if response.status_code == 200:
             data = response.json()
             if data["d"]["results"]:
@@ -112,28 +112,28 @@ def sharepoint(file_path, file_name, alien_number, site_name):
     headers = {
         "Accept": "application/json;odata=verbose",
         "Content-Type": "application/json;odata=verbose",
-        "X-RequestDigest": digest,  
+        "X-RequestDigest": digest,
         "IF-MATCH": "*",
         "X-HTTP-Method": "MERGE"
     }
 
     metadata = {
-        "__metadata": {"type": item_type},  
-        "AlienNumber": alien_number  
+        "__metadata": {"type": item_type},
+        "AlienNumber": alien_number
     }
     try: 
         response = requests.post(update_url, data=json.dumps(metadata), cookies=authcookie, headers=headers)
-        response.raise_for_status() 
+        response.raise_for_status()
         if response.status_code in [200, 204]:
-            print(f"✅ Metadata upload successfully.") 
+            print(f"✅ Metadata upload successfully.")
         else:
             print(f"❌ Error to upload metadata: {response.text}")
-    except requests.exceptions.HTTPError as http_err:  
+    except requests.exceptions.HTTPError as http_err:
         print(f"HTTP error occurred: {http_err}")
 
 if __name__ == "__main__":
     doc = "c:/Users/SimonMartinez/Documents/Simon/View Folder/OCR/Done/review.pdf"
-    sharepoint(doc, "archivo.pdf", "245-282-251") 
+    sharepoint(doc, "archivo.pdf", "245-282-251")
     get_request_digest("Shared Documents")
     get_list_item_type("Documents", "Shared Documents")
     get_file_id("Documents", "archivo.pdf", "Shared Documents")
