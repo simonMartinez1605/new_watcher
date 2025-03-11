@@ -48,7 +48,7 @@ def monitor_folder(folder):
                     doc_path = "{}/{}".format(folder.replace("\\", "/"), doc)
 
                     if wait_doc(doc_path, 5, 5):
-                        print(f"New doc found in {folder}: {doc_path}")
+                        print(f"New doc found in: {folder}")
                         #Uso de spinner para simular proceso de indexado
                         with console.status("[bold green]Indexing document...[/bold green]", spinner="dots12"):
                             for _ in range(10):
@@ -57,7 +57,7 @@ def monitor_folder(folder):
                         #Llamado a la función de indexacion
                         print("Document indexed!")
                         #Movimiento del documento a la carpeta Done dentro del servidor
-                        os.rename(doc_path, fr"{folder}\Done\{random.randint(1,10000)}.pdf")
+                        # os.rename(doc_path, fr"{folder}\Done\{random.randint(1,10000)}.pdf")
             time.sleep(2)
         except Exception as e:
             print(f"Error: {e}")

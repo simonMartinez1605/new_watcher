@@ -1,4 +1,12 @@
 import pytesseract
+import re
+
+pattern = r"^A\d{9}$"
+
+def regex(cadena): 
+    alien_number = re.sub(r"\D", "", cadena)
+
+    return f"A{alien_number}" 
 
 class Model():
     def __init__(self, data_ocr, item):
@@ -7,10 +15,27 @@ class Model():
 
     def find_42B(self):
         try:
+
             for i, word in enumerate(self.data_ocr['text']):
+                x,y,w,h = self.data_ocr['left'][i], self.data_ocr['top'][i], self.data_ocr['width'][i], self.data_ocr['height'][i]
+
+                if word == "Page":
+                    region_x = x 
+                    region_y = y
+                    region_w = 210
+                    region_h = 110
+
+                    region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
+                    status = pytesseract.image_to_string(region)
+                    status = status.replace("\n", "").replace("/", "")
+
+                    if "Page2" in status: 
+                        return "Aproved"
+                    else: 
+                        return False
+                    
 
                 if word == "APPLICANT":
-                    x,y,w,h = self.data_ocr['left'][i], self.data_ocr['top'][i], self.data_ocr['width'][i], self.data_ocr['height'][i]
                     region_x = x - 50
                     region_y = y - 80
                     region_w = 200
@@ -18,18 +43,25 @@ class Model():
 
                     region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
                     status = pytesseract.image_to_string(region)
-                    status = status.replace("\n", "")
-                    status = status.replace("/", "")
+                    status = status.replace("\n", "").replace("/","")
 
                     if "EOIR" in status:
-                        return True
+                        return "Receipt"
                     else:
-                        return False
+                        region_x = x - 890
+                        region_y = y - 200
+                        region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h)) 
+                        status = pytesseract.image_to_string(region)
+                        status = status.replace("/","").replace("\n", "")
+
+                        if "EOIR" in status: 
+                            return "Receipt" 
+                        else: return False
         except Exception as e:
             print(f"Error in search model: {e}")
             return False
         
-    def search(self):
+    def search_receipts(self):
         try:
             for i, word in enumerate(self.data_ocr['text']):
                 if word == "APPLICANT":
@@ -44,9 +76,7 @@ class Model():
 
                     name = pytesseract.image_to_string(region)
 
-                    name = name.replace("\n", "")
-                    name = name.replace("/", "")
-                    name = name.replace("|", "")
+                    name = name.replace("\n", "").replace("/", "").replace("|", "")
 
                     print(f"Document name: {name}")
 
@@ -59,10 +89,8 @@ class Model():
 
                     alien_number = pytesseract.image_to_string(region)
 
-                    alien_number = alien_number.replace("\n", "")
-                    alien_number = alien_number.replace("/", "")
-                    alien_number = alien_number.replace(" ", "")
-
+                    alien_number = regex(alien_number) 
+                    
                     print(f"Alien number: {alien_number}")
 
                     return {
@@ -72,3 +100,41 @@ class Model():
         except Exception as e:
             print(f"Error in search model: {e}")
             return False
+        
+    def aproved_case(self): 
+        try: 
+            for i, word in enumerate(self.data_ocr['text']): 
+                if word == "Page": 
+                    x,y,w,h = self.data_ocr['left'][i], self.data_ocr['top'][i], self.data_ocr['width'][i], self.data_ocr['height'][i]
+                    region_x = x + 300
+                    region_y = y + 20
+                    region_w = 800
+                    region_h = 50
+
+                    region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
+
+                    name = pytesseract.image_to_string(region)
+
+                    name = name.replace("\n", "").replace("|", "").replace("/", "")
+
+                    print(f"Document name: {name}")
+
+                    region_x = x + 433
+                    region_y = y + 4
+                    region_w = 215
+                    region_h = 35
+
+                    region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
+
+                    alien_number = pytesseract.image_to_string(region)
+
+                    alien_number = regex(alien_number) 
+
+                    print(f"Alien number: {alien_number}")
+
+                    return {
+                        'name':name,
+                        'alien_number':alien_number
+                    }
+        except Exception as e: 
+            print(e)

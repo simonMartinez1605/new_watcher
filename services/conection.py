@@ -77,7 +77,7 @@ def get_file_id(list_name, file_name, site_name,authcookie) -> str:
         print(f"HTTP error occurred: {http_err}")
     
 # Función para subir archivo y actualizar metadatos
-def sharepoint(file_path, file_name, alien_number, site_name):
+def sharepoint(file_path, file_name, alien_number, site_name, case_type):
 
     # Authentificacion a SharePoint
     authcookie = Office365(sharepoint_url, username=username, password=password).GetCookies()
@@ -119,7 +119,8 @@ def sharepoint(file_path, file_name, alien_number, site_name):
 
     metadata = {
         "__metadata": {"type": item_type},
-        "AlienNumber": alien_number
+        "AlienNumber": alien_number, 
+        "CaseType":case_type
     }
     try: 
         response = requests.post(update_url, data=json.dumps(metadata), cookies=authcookie, headers=headers)
