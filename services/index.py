@@ -7,87 +7,80 @@ from services.conection import sharepoint
 import os
 import pytesseract
 import shutil
+import traceback
+from io import BytesIO
 
 load_dotenv()
 
-#funcion para indexar los documentos
-def indexing(pdf, option, path):
-    #Convertir pdf en hojas
-    pages = convert_from_path(pdf)
+def process_page(page):
+    """Procesa una sola página del PDF con OCR."""
+    data_ocr_page = pytesseract.image_to_data(page, output_type=pytesseract.Output.DICT)
+    return Model(data_ocr_page, page)
 
-    #Uso de la libreria PdfWriter la cual puede almacenar contenido pdf en una lista
+def save_and_ocr(pdf_save, processed_path, result, doc_name, option):
+    """Guarda el PDF combinado en la carpeta de procesados, aplica OCR y lo sube a SharePoint."""
+    
+    # Asegurarse de que la carpeta de procesados exista
+    os.makedirs(processed_path, exist_ok=True)
+    
+    output_pdf_path = os.path.join(processed_path, f"{result['name']}.pdf")
+
+    with open(output_pdf_path, "wb") as output_pdf:
+        pdf_save.write(output_pdf)
+
+    print(f"Combined PDF saved as {output_pdf_path}")
+    
+    ocr(output_pdf_path)
+    print(f"OCR completed for {output_pdf_path}")
+
+    sharepoint(output_pdf_path, f"{result['name']}-{doc_name}.pdf", result['alien_number'], option, doc_name)
+
+def indexing(pdf, option, input_path, processed_path):
+    """Convierte un PDF a imágenes, aplica OCR y clasifica documentos."""
+    
+    pages = convert_from_path(os.path.join(input_path, pdf))
     pdf_save = PdfWriter()
 
     try:
-        #Iterar sobre las hojas del pdf
-        for page in range(0, len(pages)):
-            
-            page1 = pages[page]
-            #Uso de pytesseract para el reconocimento optico y convertir las hojas en un diccionario de palabras
-            data_ocr_page = pytesseract.image_to_data(page1, output_type=pytesseract.Output.DICT)
-            
-            #Manejo de casos para los diferentes tipos de archivos que llegan
-            match option:
-                case "42BReceipts":
+        for page in pages:
+            model = process_page(page)
+            image_stream = BytesIO()
+            page.save(image_stream, format="PDF")
+            pdf_save.append(image_stream)
 
-                    #Implementacion del modelo de busqueda
-                    doc_type = Model(data_ocr_page, page1).find_42B()
-
-                    #Guardar cada una de las hojas en formato pdf
-                    page_path = fr"{path}.pdf"
-                    page1.save(page_path, "PDF")
-
-                    #Añadir la pagina convertida a pdf en la libreria de PdfWriter
-                    pdf_save.append(page_path)
-
-                    #Validacion del tipo de documento que entra
-                    match doc_type: 
-                        case "Receipt": 
-                            #Uso de la funcion search para encontrar el ancla, la cual nos indica que es el ultimo documento ligado a la misma persona
-                            result = Model(data_ocr_page, page1).search_receipts()
-
-                            #Combinacion de los documentos guardados
-                            output_pdf_path = f"{path}{result['name']}.pdf"
-                            with open(output_pdf_path, "wb") as output_pdf:
-                                pdf_save.write(output_pdf)
-                            print(f"Combined PDF saved as {output_pdf_path}")
-
-                            #Aplicamiento de OCR (Optical Character Recognition)
-                            ocr(output_pdf_path)
-
-                            print(f"OCR completed for {output_pdf_path}")
-
-                            #Guardar la informacion extraida y el documento pdf en sharepoint
-                            # sharepoint(output_pdf_path, f"{result['name']}-Payment.pdf", result['alien_number'],option, "EIOR 42B")
-
-                            #Vaciar libreria de guardado para otra posible iteracion
-                            pdf_save = PdfWriter()
-                        case "Aproved": 
-                            result = Model(data_ocr_page, page1).aproved_case() 
-                            #Combinacion de los documentos guardados
-
-                            output_pdf_path = f"{path}{result['name']}.pdf"
-                            with open(output_pdf_path, "wb") as output_pdf:
-                                pdf_save.write(output_pdf)
-                            print(f"Combined PDF saved as {output_pdf_path}")
-
-                            #Aplicamiento de OCR (Optical Character Recognition)
-                            ocr(output_pdf_path)
-
-                            print(f"OCR completed for {output_pdf_path}")
-
-                            #Guardar la informacion extraida y el documento pdf en sharepoint
-                            # sharepoint(output_pdf_path, f"{result['name']}-Receipts.pdf", result['alien_number'],option, "EOIR Form")
-
-                            pdf_save = PdfWriter() 
-                        case "Appointment": 
-                            print("Appointment")
-
-                case "Criminal":
-                    print("Criminal case")
+            if option == "42BReceipts":
+                doc_type = model.find_42B()
+                
+                match doc_type:
+                    case "Receipt":
+                        result = model.search_receipts()
+                        save_and_ocr(pdf_save, processed_path, result, "Payment", option)
+                        pdf_save = PdfWriter()  # Reset para siguiente documento
+                    case "Aproved":
+                        result = model.aproved_case()
+                        save_and_ocr(pdf_save, processed_path, result, "Receipts", option)
+                        pdf_save = PdfWriter()
+                    case "Appointment":
+                        result = model.appointment()
+                        save_and_ocr(pdf_save, processed_path, result, "Appointment", option)
+                        pdf_save = PdfWriter()
+            elif option == "Criminal":
+                print("Criminal case")
+        
+        # Mover el documento original a la carpeta de procesados para evitar duplicados
+        shutil.move(os.path.join(input_path, pdf), os.path.join(processed_path, pdf))
+    
     except Exception as e:
-        print(f"Error in indexing module : {e}")
-        shutil.move(pdf, rf"{path}\Errors\{os.path.basename(pdf)}")
+        print(f"Error in indexing module: {e}")
+        print(traceback.format_exc())
+
+        error_path = os.path.join(input_path, "Errors", os.path.basename(pdf))
+        shutil.move(os.path.join(input_path, pdf), error_path)
 
 if __name__ == "__main__":
-    indexing("save_pdf")
+    input_path = "incoming_docs"   # Carpeta donde se encuentran los PDFs sin procesar
+    processed_path = "processed_docs"  # Carpeta donde se guardarán los PDFs procesados
+    pdf = "document.pdf"  
+    option = "42BReceipts"
+    
+    indexing(pdf, option, input_path, processed_path)

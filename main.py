@@ -37,6 +37,7 @@ def wait_doc(pdf_path, time_out, attempts):
 def monitor_folder(folder):
     print(f"Monitoring folder: {folder}")
     #Desglose de la ruta de la carpeta para obtener el nombre de la carpeta
+    processed_path = f"{folder}\Process"
     option = folder.split("\\")[-1] #Con respecto a esta variable hay que tener en cuenta que el sharepoint en el que va a guardar la informacion debe tener el mismo nombre que la carpeta 
     while True:
         try:
@@ -53,11 +54,11 @@ def monitor_folder(folder):
                         with console.status("[bold green]Indexing document...[/bold green]", spinner="dots12"):
                             for _ in range(10):
                                 time.sleep(0.5)
-                        indexing(doc_path, option, folder)
+                        indexing(doc_path, option, folder, processed_path)
                         #Llamado a la función de indexacion
                         print("Document indexed!")
                         #Movimiento del documento a la carpeta Done dentro del servidor
-                        # os.rename(doc_path, fr"{folder}\Done\{random.randint(1,10000)}.pdf")
+                        os.rename(doc_path, fr"{folder}\Done\{random.randint(1,10000)}.pdf")
             time.sleep(2)
         except Exception as e:
             print(f"Error: {e}")
