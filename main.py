@@ -1,11 +1,13 @@
 from dotenv import load_dotenv
 from services.index import indexing
 from rich.console import Console
+from pathlib import Path
 import smbclient
 import os
 import time
-import random
+import uuid
 import threading
+import logging
 
 load_dotenv()
 
@@ -23,10 +25,10 @@ folders_to_monitor = [
 ]
 
 # Función para esperar a que el documento se haya guardado completamente
-def wait_doc(pdf_path, time_out, attempts):
+def wait_doc(pdf_path, timeout, attempts):
     for _ in range(attempts):
         last_size = os.path.getsize(pdf_path)
-        time.sleep(time_out)
+        time.sleep(timeout)
         updated_size = os.path.getsize(pdf_path)
         if last_size == updated_size:
             return True
@@ -37,28 +39,24 @@ def wait_doc(pdf_path, time_out, attempts):
 def monitor_folder(folder):
     print(f"Monitoring folder: {folder}")
     #Desglose de la ruta de la carpeta para obtener el nombre de la carpeta
-    processed_path = f"{folder}\Process"
-    option = folder.split("\\")[-1] #Con respecto a esta variable hay que tener en cuenta que el sharepoint en el que va a guardar la informacion debe tener el mismo nombre que la carpeta 
+    processed_path = Path(folder) / "Process"
+    option = Path(folder).name #Con respecto a esta variable hay que tener en cuenta que el sharepoint en el que va a guardar la informacion debe tener el mismo nombre que la carpeta 
     while True:
         try:
             #Obtención de los documentos en la carpeta
-            acutal_folder = set(smbclient.listdir(folder))
+            actual_folder = set(smbclient.listdir(folder))
             #Iteración sobre los documentos en la carpeta
-            for doc in acutal_folder:
+            for doc in actual_folder:
                 if doc.lower().endswith('.pdf'):
                     doc_path = "{}/{}".format(folder.replace("\\", "/"), doc)
 
                     if wait_doc(doc_path, 5, 5):
                         print(f"New doc found in: {folder}")
-                        #Uso de spinner para simular proceso de indexado
-                        with console.status("[bold green]Indexing document...[/bold green]", spinner="dots12"):
-                            for _ in range(10):
-                                time.sleep(0.5)
                         indexing(doc_path, option, folder, processed_path)
                         #Llamado a la función de indexacion
-                        print("Document indexed!")
+                        logging.info("Document indexed!")
                         #Movimiento del documento a la carpeta Done dentro del servidor
-                        os.rename(doc_path, fr"{folder}\Done\{random.randint(1,10000)}.pdf")
+                        # smbclient.rename(doc_path, Path(folder) / "Done" / f"{uuid.uuid4()}.pdf")
             time.sleep(2)
         except Exception as e:
             print(f"Error: {e}")

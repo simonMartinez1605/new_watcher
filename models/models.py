@@ -1,12 +1,17 @@
 import pytesseract
 import re
 
-pattern = r"^A\d{9}$"
+pattern_alien_number = r"^A\d{9}$"
 
-def regex(cadena): 
+def regex_alien_number(cadena): 
     alien_number = re.sub(r"\D", "", cadena)
 
     return f"A{alien_number}" 
+
+def regex_name(text): 
+    regex = r"[^A-ZÁÉÍÓÚáéíóúÑñÜü ]"
+
+    return re.sub(regex, "", text) 
 
 class Model():
     def __init__(self, data_ocr, item):
@@ -20,17 +25,18 @@ class Model():
                 x,y,w,h = self.data_ocr['left'][i], self.data_ocr['top'][i], self.data_ocr['width'][i], self.data_ocr['height'][i]
 
                 if word == "Page":
-                    region_x = x
+                    region_x = x 
                     region_y = y
-                    region_w = 210
-                    region_h = 110
+                    region_w = 140
+                    region_h = 140
 
                     region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
                     status = pytesseract.image_to_string(region)
                     status = status.replace("\n", "").replace("/", "")
 
+
                     if "Page2" in status: 
-                        return "Aproved"
+                        return "Receipts"
                     else: 
                         return False
                     
@@ -46,7 +52,7 @@ class Model():
                     status = status.replace("\n", "").replace("/","")
 
                     if "EOIR" in status:
-                        return "Receipt"
+                        return "Payment"
                     else:
                         region_x = x - 890
                         region_y = y - 200
@@ -55,7 +61,7 @@ class Model():
                         status = status.replace("/","").replace("\n", "")
 
                         if "EOIR" in status: 
-                            return "Receipt" 
+                            return "Payment" 
                         else: return False
 
                 if word == "Appointment": 
@@ -97,7 +103,7 @@ class Model():
 
                     name = pytesseract.image_to_string(region)
 
-                    name = name.replace("\n", "").replace("/", "").replace("|", "")
+                    name = regex_name(name) 
 
                     print(f"Document name: {name}")
 
@@ -110,7 +116,7 @@ class Model():
 
                     alien_number = pytesseract.image_to_string(region)
 
-                    alien_number = regex(alien_number) 
+                    alien_number = regex_alien_number(alien_number) 
                     
                     print(f"Alien number: {alien_number}")
 
@@ -127,29 +133,35 @@ class Model():
             for i, word in enumerate(self.data_ocr['text']): 
                 if word == "Page": 
                     x,y,w,h = self.data_ocr['left'][i], self.data_ocr['top'][i], self.data_ocr['width'][i], self.data_ocr['height'][i]
-                    region_x = x + 300
-                    region_y = y + 20
+                    region_x = x + 350
+                    region_y = y + 19
                     region_w = 800
-                    region_h = 50
+                    region_h = 35
 
                     region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
 
                     name = pytesseract.image_to_string(region)
 
-                    name = name.replace("\n", "").replace("|", "").replace("/", "")
+                    name = name.split("\n")
+                    
+                    for i in name: 
+                        if len(i) > 12: 
+                            name = i 
+                            
+                    name = regex_name(name)
 
                     print(f"Document name: {name}")
 
                     region_x = x + 433
-                    region_y = y + 4
+                    region_y = y + 2.8
                     region_w = 215
-                    region_h = 35
+                    region_h = 38
 
                     region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
 
                     alien_number = pytesseract.image_to_string(region)
 
-                    alien_number = regex(alien_number) 
+                    alien_number = regex_alien_number(alien_number) 
 
                     print(f"Alien number: {alien_number}")
 
@@ -166,15 +178,15 @@ class Model():
                 if word == "Appointment": 
                     x,y,w,h = self.data_ocr['left'][i], self.data_ocr['top'][i], self.data_ocr['width'][i], self.data_ocr['height'][i]
                     region_x = x - 50
-                    region_y = y + 250
+                    region_y = y + 200
                     region_w = 800
-                    region_h = 50
+                    region_h = 120
 
                     region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
 
                     name = pytesseract.image_to_string(region)
 
-                    name = name.replace("\n", "").replace("|", "").replace("/", "")
+                    name = regex_name(name)
 
                     print(f"Document name: {name}")
 
@@ -187,7 +199,7 @@ class Model():
 
                     alien_number = pytesseract.image_to_string(region)
 
-                    alien_number = regex(alien_number) 
+                    alien_number = regex_alien_number(alien_number) 
 
                     print(f"Alien number: {alien_number}")
 

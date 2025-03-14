@@ -52,11 +52,11 @@ def indexing(pdf, option, input_path, processed_path):
                 doc_type = model.find_42B()
                 
                 match doc_type:
-                    case "Receipt":
+                    case "Payment":
                         result = model.search_receipts()
                         save_and_ocr(pdf_save, processed_path, result, "Payment", option)
                         pdf_save = PdfWriter()  # Reset para siguiente documento
-                    case "Aproved":
+                    case "Receipts":
                         result = model.aproved_case()
                         save_and_ocr(pdf_save, processed_path, result, "Receipts", option)
                         pdf_save = PdfWriter()
