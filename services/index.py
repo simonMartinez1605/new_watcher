@@ -9,6 +9,7 @@ import pytesseract
 import shutil
 import traceback
 from io import BytesIO
+import uuid
 
 load_dotenv()
 
@@ -19,9 +20,22 @@ def process_page(page):
 
 def save_and_ocr(pdf_save, processed_path, result, doc_name, option):
     """Guarda el PDF combinado en la carpeta de procesados, aplica OCR y lo sube a SharePoint."""
-    
-    # Asegurarse de que la carpeta de procesados exista
+
+    # Asegurar que la carpeta de procesados existe
     os.makedirs(processed_path, exist_ok=True)
+
+    if result is None:
+        error_folder = os.path.join(processed_path, "Errors")
+        os.makedirs(error_folder, exist_ok=True)  # Asegurar que la carpeta de errores existe
+        output_pdf_path = os.path.join(error_folder, f"{uuid.uuid4()}.pdf")
+
+        with open(output_pdf_path, "wb") as output_pdf:
+            pdf_save.write(output_pdf)
+
+        print(f"❌ Doc save in errors folders: {output_pdf_path}")
+
+        pdf_save = PdfWriter()  # Reset para siguiente documento
+        return False
     
     output_pdf_path = os.path.join(processed_path, f"{result['name']}.pdf")
 
@@ -34,6 +48,8 @@ def save_and_ocr(pdf_save, processed_path, result, doc_name, option):
     print(f"OCR completed for {output_pdf_path}")
 
     sharepoint(output_pdf_path, f"{result['name']}-{doc_name}.pdf", result['alien_number'], option, doc_name)
+
+    return True
 
 def indexing(pdf, option, input_path, processed_path):
     """Convierte un PDF a imágenes, aplica OCR y clasifica documentos."""
@@ -54,15 +70,32 @@ def indexing(pdf, option, input_path, processed_path):
                 match doc_type:
                     case "Payment":
                         result = model.search_receipts()
+                        count_pages = len(pdf_save.pages)
+                        if count_pages > 1:
+                            result = None
                         save_and_ocr(pdf_save, processed_path, result, "Payment", option)
                         pdf_save = PdfWriter()  # Reset para siguiente documento
                     case "Receipts":
                         result = model.aproved_case()
+                        count_pages = len(pdf_save.pages)
+                        if count_pages > 2:
+                            result = None
                         save_and_ocr(pdf_save, processed_path, result, "Receipts", option)
                         pdf_save = PdfWriter()
                     case "Appointment":
                         result = model.appointment()
+                        count_pages = len(pdf_save.pages)
+                        if count_pages > 1:
+                            result = None
                         save_and_ocr(pdf_save, processed_path, result, "Appointment", option)
+                        pdf_save = PdfWriter()
+                    case "Reused": 
+                        result = model.reused()
+                        count_pages = len(pdf_save.pages)
+                        print("count_pages", count_pages)
+                        if count_pages > 1:
+                            result = None
+                        save_and_ocr(pdf_save, processed_path, result, "Reused", option)
                         pdf_save = PdfWriter()
             elif option == "Criminal":
                 print("Criminal case")

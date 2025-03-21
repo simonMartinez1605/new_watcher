@@ -2,6 +2,9 @@ from dotenv import load_dotenv
 from services.index import indexing
 from rich.console import Console
 from pathlib import Path
+from testing.test_QA import DocumentReviewer
+from PyQt6.QtWidgets import QApplication
+import sys
 import smbclient
 import os
 import time
@@ -24,6 +27,10 @@ folders_to_monitor = [
     rf"\\{path_share_folder}\Criminal",
 ]
 
+error_folder_to_monitor = [
+    rf"\\{path_share_folder}\42BReceipts\Process\Errors"
+]
+
 # Función para esperar a que el documento se haya guardado completamente
 def wait_doc(pdf_path, timeout, attempts):
     for _ in range(attempts):
@@ -34,6 +41,29 @@ def wait_doc(pdf_path, timeout, attempts):
             return True
 
     return False
+
+def error_monitor_folder(error_folder, proccess_folder):
+    print(f"Monitoring error folder: {error_folder}")
+    error_path = Path(error_folder)
+    try:
+        actual_folder = set(smbclient.listdir(proccess_folder))
+        error_folder = set(smbclient.listdir(error_folder))
+        
+        actual_doc = [doc for doc in actual_folder if doc.lower().endswith('.pdf')]
+        error_doc = [doc for doc in error_folder if doc.lower().endswith('.pdf')]
+
+        # print(f"Actual folder: {len(actual_doc)}")
+        # print(f"Error folder: {len(error_doc)}")
+
+        if len(actual_doc) == 0 and len(error_doc) > 0:
+
+            app = QApplication(sys.argv)
+            window = DocumentReviewer(error_path)
+            window.show()
+            sys.exit(app.exec())
+
+    except Exception as e:
+        print(f"Error: {e}")
 
 # Función para monitorear las carpetas
 def monitor_folder(folder):
@@ -52,11 +82,12 @@ def monitor_folder(folder):
 
                     if wait_doc(doc_path, 5, 5):
                         print(f"New doc found in: {folder}")
+                        print("----------------------------------------------------------------------------------")
                         indexing(doc_path, option, folder, processed_path)
                         #Llamado a la función de indexacion
                         logging.info("Document indexed!")
                         #Movimiento del documento a la carpeta Done dentro del servidor
-                        # smbclient.rename(doc_path, Path(folder) / "Done" / f"{uuid.uuid4()}.pdf")
+                        smbclient.rename(doc_path, Path(folder) / "Done" / f"{uuid.uuid4()}.pdf")
             time.sleep(2)
         except Exception as e:
             print(f"Error: {e}")
@@ -71,10 +102,10 @@ for folder in folders_to_monitor:
     thread.start()
     threads.append(thread)
 
-
 if __name__=="__main__":
     try:
         while True:
+            # error_monitor_folder(error_folder_to_monitor[0], folders_to_monitor[0])
             time.sleep(1)
     except KeyboardInterrupt:
         print("Exiting...")
