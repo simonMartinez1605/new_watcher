@@ -5,6 +5,8 @@ from services.ocr import ocr
 from dotenv import load_dotenv
 from services.conection import sharepoint
 from io import BytesIO
+from services.deskewing import deskew_image
+from PIL import Image
 import os
 import pytesseract
 import shutil
@@ -12,14 +14,10 @@ import traceback
 import uuid
 import json
 import re
+import numpy as np
+import cv2
 
 load_dotenv()
-
-#funcion para cargar el arhivo JSON
-def load_json(file_path):
-    with open(file_path, 'r', encoding='utf-8') as f:
-        data = json.load(f)
-    return data
 
 #Funciones para validar datos extraidos
 def regex_alien_number(cadena):
@@ -30,12 +28,18 @@ def regex_name(text):
     regex = r"[^A-ZÁÉÍÓÚáéíóúÑñÜü ]"
     return re.sub(regex, "", text)
 
+#funcion para cargar el arhivo JSON
+def load_json(file_path):
+    with open(file_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    return data
+
 def search_in_doc(model, name_doc, type_data):
     # Cargar el JSON
-    json = "Rura correspondiente al archivo en donde se encuentran las coordenadas de cada tipo de documento"
+    json = r"\Users\simon\OneDrive\Documents\Simon\Python\new_watcher\data.json"
     json_result = load_json(json)
     # Iterar sobre la lista de documentos
-    for doc in json_result:
+    for i, doc in enumerate(json_result):
         if doc["pdf"] == name_doc:  # Comprobar si el 'pdf' coincide con 'name_doc'
             # Verificar si el 'type_data' está presente en el documento
             if type_data in doc:
@@ -46,17 +50,24 @@ def search_in_doc(model, name_doc, type_data):
                     width = coord['width']
                     height = coord['height']
 
-                    # Llamar al método aproved_case del modelo
                     result = model.aproved_case(x, y, width, height)
-            
-                return result[0]
+                    if not result == None:
+                        if len(result) > 15 and len(result) < 70:
+                            return result
+                return result
     # Si no se encuentra el documento o el tipo de dato, retorna None o alguna respuesta por defecto
     return None
 
 def process_page(page):
-    """Procesa una sola página del PDF con OCR."""
-    data_ocr_page = pytesseract.image_to_data(page, output_type=pytesseract.Output.DICT)
-    return Model(data_ocr_page, page)
+    """Procesa una sola página del PDF con OCR después de corregir la inclinación."""
+    open_cv_image = np.array(page)
+    open_cv_image = deskew_image(open_cv_image)  # Aplicar deskewing
+    
+    # Convertir el array de numpy de vuelta a PIL Image
+    pil_image = Image.fromarray(open_cv_image)
+    
+    data_ocr_page = pytesseract.image_to_data(open_cv_image, output_type=pytesseract.Output.DICT)
+    return Model(data_ocr_page, pil_image)
 
 #Funcion para guardar y realizar OCR a cada uno de los documentos encontrados
 def save_and_ocr(pdf_save, processed_path, result, doc_name, option):
@@ -66,7 +77,7 @@ def save_and_ocr(pdf_save, processed_path, result, doc_name, option):
     os.makedirs(processed_path, exist_ok=True)
 
     #Validacion de datos y manejo de errores en carpetas individuales
-    if result is None:
+    if result is None or result['name'] == '' or result['alien_number'] == '' or result['name'] == None:
         error_folder = os.path.join(processed_path, "Errors")
         os.makedirs(error_folder, exist_ok=True)  # Asegurar que la carpeta de errores existe
         output_pdf_path = os.path.join(error_folder, f"{uuid.uuid4()}.pdf")
@@ -88,11 +99,11 @@ def save_and_ocr(pdf_save, processed_path, result, doc_name, option):
 
     print(f"Combined PDF saved as {output_pdf_path}")
     
-    ocr(output_pdf_path)
+    # ocr(output_pdf_path)
     print(f"OCR completed for {output_pdf_path}")
 
     #Funcion para subir el documento y los metadados al sharepoint
-    sharepoint(output_pdf_path, f"{result['name']}-{doc_name}.pdf", result['alien_number'], option, doc_name)
+    # sharepoint(output_pdf_path, f"{result['name']}-{doc_name}.pdf", result['alien_number'], option, doc_name)
 
     return True
 
@@ -103,11 +114,14 @@ def indexing(pdf, option, input_path, processed_path):
     pages = convert_from_path(os.path.join(input_path, pdf))
     pdf_save = PdfWriter()
 
+    # ocr(pdf)
+
     #Funcion de ejecucion general para no generar codigo innecesario
     def exect_funct(type_name, doc_name): 
-        alien_number = search_in_doc(model,type_name, "a_number")
-        alien_number = regex_alien_number(alien_number)
         name = search_in_doc(model,type_name, "name")
+        # name = regex_name(name)
+        alien_number = search_in_doc(model,type_name, "a_number")
+        # alien_number = regex_alien_number(alien_number)
         result = {"name": name, "alien_number": alien_number}
         print(result)
         save_and_ocr(pdf_save, processed_path, result, doc_name, option)
@@ -139,11 +153,13 @@ def indexing(pdf, option, input_path, processed_path):
                         pdf_save = PdfWriter()
             elif option == "Asylum":
 
-                doc_type = model.find_receipts()
+                doc_type = model.find_receipts_asylum()
 
+                print(doc_type)
                 match doc_type:
                     case "Appointment":
-                        exect_funct("Appointment_asylum", doc_type)
+                        # exect_funct("Appointment_asylum", doc_type)
+                        exect_funct("Test", doc_type)
                         pdf_save = PdfWriter()
                     case "Receipts": 
                         exect_funct("Approved_cases_asylum", doc_type)
@@ -151,6 +167,12 @@ def indexing(pdf, option, input_path, processed_path):
                     case "Payment_receipt": 
                         exect_funct("Asylum_receipt", doc_type)
                         pdf_save = PdfWriter()
+                    case "Defensive_receipt": 
+                        exect_funct("Defensive_receipt", doc_type)
+                        pdf_save = PdfWriter()
+            elif option == "Criminal": 
+                result = {"name":f"{uuid.uuid4()}", "alien_number":" "}
+                save_and_ocr(pdf_save, processed_path,result," ", option)
 
         # Mover el documento original a la carpeta de procesados para evitar duplicados
         shutil.move(os.path.join(input_path, pdf), os.path.join(processed_path, pdf))

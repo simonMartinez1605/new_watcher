@@ -58,8 +58,8 @@ def monitor_folder(folder):
                         #Llamado a la función de indexacion
                         logging.info("Document indexed!")
                         #Movimiento del documento a la carpeta Done dentro del servidor
-                        smbclient.rename(doc_path, Path(folder) / "Done" / f"{uuid.uuid4()}.pdf")
-            time.sleep(2)
+                        # smbclient.rename(doc_path, Path(folder) / "Done" / f"{uuid.uuid4()}.pdf")
+            time.sleep(12)
         except Exception as e:
             print(f"Error: {e}")
 
@@ -76,6 +76,6 @@ for folder in folders_to_monitor:
 if __name__=="__main__":
     try:
         while True:
-            time.sleep(1)
+            time.sleep(15)
     except KeyboardInterrupt:
         print("Exiting...")
