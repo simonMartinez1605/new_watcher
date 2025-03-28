@@ -58,7 +58,7 @@ def monitor_folder(folder):
                         #Llamado a la función de indexacion
                         logging.info("Document indexed!")
                         #Movimiento del documento a la carpeta Done dentro del servidor
-                        # smbclient.rename(doc_path, Path(folder) / "Done" / f"{uuid.uuid4()}.pdf")
+                        smbclient.rename(doc_path, Path(folder) / "Done" / f"{uuid.uuid4()}.pdf")
             time.sleep(12)
         except Exception as e:
             print(f"Error: {e}")

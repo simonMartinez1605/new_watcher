@@ -34,30 +34,6 @@ def load_json(file_path):
         data = json.load(f)
     return data
 
-def search_in_doc(model, name_doc, type_data):
-    # Cargar el JSON
-    json = r"\Users\simon\OneDrive\Documents\Simon\Python\new_watcher\data.json"
-    json_result = load_json(json)
-    # Iterar sobre la lista de documentos
-    for i, doc in enumerate(json_result):
-        if doc["pdf"] == name_doc:  # Comprobar si el 'pdf' coincide con 'name_doc'
-            # Verificar si el 'type_data' está presente en el documento
-            if type_data in doc:
-                # Iterar sobre las coordenadas dentro del tipo de dato (por ejemplo, 'name' o 'a_number')
-                for coord in doc[type_data]:
-                    x = coord['x']
-                    y = coord['y']
-                    width = coord['width']
-                    height = coord['height']
-
-                    result = model.aproved_case(x, y, width, height)
-                    if not result == None:
-                        if len(result) > 15 and len(result) < 70:
-                            return result
-                return result
-    # Si no se encuentra el documento o el tipo de dato, retorna None o alguna respuesta por defecto
-    return None
-
 def process_page(page):
     """Procesa una sola página del PDF con OCR después de corregir la inclinación."""
     open_cv_image = np.array(page)
@@ -68,6 +44,33 @@ def process_page(page):
     
     data_ocr_page = pytesseract.image_to_data(open_cv_image, output_type=pytesseract.Output.DICT)
     return Model(data_ocr_page, pil_image)
+
+def search_in_doc(page, name_doc, type_data, json_type):
+
+    model = process_page(page)
+
+    # Cargar el JSON
+    json = fr"C:\Users\simon\OneDrive\Documents\Simon\Python\new_watcher\jsons\{json_type}.json"
+    json_result = load_json(json)
+    # Iterar sobre la lista de documentos
+    for i, doc in enumerate(json_result):
+        if doc["pdf"] == name_doc:  # Comprobar si el 'pdf' coincide con 'name_doc'
+            # Verificar si el 'type_data' está presente en el documento
+            key_word = doc['key_word']
+            if type_data in doc:
+                # Iterar sobre las coordenadas dentro del tipo de dato (por ejemplo, 'name' o 'a_number')
+                for coord in doc[type_data]:
+                    x = coord['x']
+                    y = coord['y']
+                    width = coord['width']
+                    height = coord['height']
+                    result = model.aproved_case(x, y, width, height, key_word)
+                    if not result == None:
+                        if len(result) > 15 and len(result) < 70:
+                            return result
+                return result
+    # Si no se encuentra el documento o el tipo de dato, retorna None o alguna respuesta por defecto
+    return None
 
 #Funcion para guardar y realizar OCR a cada uno de los documentos encontrados
 def save_and_ocr(pdf_save, processed_path, result, doc_name, option):
@@ -99,11 +102,11 @@ def save_and_ocr(pdf_save, processed_path, result, doc_name, option):
 
     print(f"Combined PDF saved as {output_pdf_path}")
     
-    # ocr(output_pdf_path)
+    ocr(output_pdf_path)
     print(f"OCR completed for {output_pdf_path}")
 
     #Funcion para subir el documento y los metadados al sharepoint
-    # sharepoint(output_pdf_path, f"{result['name']}-{doc_name}.pdf", result['alien_number'], option, doc_name)
+    sharepoint(output_pdf_path, f"{result['name']}-{doc_name}.pdf", result['alien_number'], option, doc_name)
 
     return True
 
@@ -114,20 +117,23 @@ def indexing(pdf, option, input_path, processed_path):
     pages = convert_from_path(os.path.join(input_path, pdf))
     pdf_save = PdfWriter()
 
-    # ocr(pdf)
-
     #Funcion de ejecucion general para no generar codigo innecesario
-    def exect_funct(type_name, doc_name): 
-        name = search_in_doc(model,type_name, "name")
-        # name = regex_name(name)
-        alien_number = search_in_doc(model,type_name, "a_number")
-        # alien_number = regex_alien_number(alien_number)
+    def exect_funct(type_name, doc_name, page, json_type): 
+        #Ejecucion de la funcion de busqueda, especificamente pasando la pagina, el tipo de documeto, el lo que se va a buscar, ya sea el nombre o el alien number y por ultimo el json en donde se almacenaron las coordenadas
+        name = search_in_doc(page,type_name, "name",json_type)
+        #Ejecucion de funcion para parametrizar el nombre 
+        name = regex_name(name)
+        alien_number = search_in_doc(page,type_name, "a_number",json_type)
+        alien_number = regex_alien_number(alien_number)
+        #Concatenar el resultado
         result = {"name": name, "alien_number": alien_number}
         print(result)
+        #Pasarle el resultado a la funcion que realizar el OCR y guarda los documentos en sharepoint
         save_and_ocr(pdf_save, processed_path, result, doc_name, option)
     try:
         #Iterar sobre las hojas del documento escaneado
         for page in pages:
+            #Funcion para procesar imagenes
             model = process_page(page)
             image_stream = BytesIO()
             page.save(image_stream, format="PDF") #Agregar cada hoja en el PDF temporal
@@ -140,16 +146,16 @@ def indexing(pdf, option, input_path, processed_path):
                 #Validacion de cada uno de los documentos que se pueden encontrar
                 match doc_type:
                     case "Payment":
-                       exect_funct("Payment", doc_type)
+                       exect_funct("Payment", doc_type, page,"42B")
                        pdf_save = PdfWriter()  # Reset para siguiente documento
                     case "Receipts":
-                        exect_funct("Receipts_42B", doc_type)
+                        exect_funct("Receipts_42B", doc_type, page,"42B")
                         pdf_save = PdfWriter()
                     case "Appointment":
-                        exect_funct("Appointment_42B", doc_type)
+                        exect_funct("Appointment_42B", doc_type, page,"42B")
                         pdf_save = PdfWriter()
                     case "Reused": 
-                        exect_funct("Reused_42B", doc_type)
+                        exect_funct("Reused_42B", doc_type, page,"42B")
                         pdf_save = PdfWriter()
             elif option == "Asylum":
 
@@ -158,18 +164,29 @@ def indexing(pdf, option, input_path, processed_path):
                 print(doc_type)
                 match doc_type:
                     case "Appointment":
-                        # exect_funct("Appointment_asylum", doc_type)
-                        exect_funct("Test", doc_type)
+                        exect_funct("Appointment_asylum", doc_type, page, "Asylum")
                         pdf_save = PdfWriter()
-                    case "Receipts": 
-                        exect_funct("Approved_cases_asylum", doc_type)
+
+                    case "Receipts":
+                        exect_funct("Approved_cases_asylum", doc_type, page, "Asylum")
                         pdf_save = PdfWriter()
+
                     case "Payment_receipt": 
-                        exect_funct("Asylum_receipt", doc_type)
+                        exect_funct("Asylum_receipt", doc_type, page, "Asylum")
                         pdf_save = PdfWriter()
+
                     case "Defensive_receipt": 
-                        exect_funct("Defensive_receipt", doc_type)
+                        exect_funct("Defensive_receipt", doc_type, page, "Asylum")
                         pdf_save = PdfWriter()
+
+                    case "Application_to_asylum": 
+                        exect_funct("Application_to_asylum", doc_type, page, "Asylum")
+                        pdf_save = PdfWriter() 
+                    
+                    case "Reused": 
+                        exect_funct("Reused_asylum", doc_type, page, "Asylum")
+                        pdf_save = PdfWriter()
+
             elif option == "Criminal": 
                 result = {"name":f"{uuid.uuid4()}", "alien_number":" "}
                 save_and_ocr(pdf_save, processed_path,result," ", option)

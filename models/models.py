@@ -20,23 +20,36 @@ class Model():
         self.data_ocr = data_ocr
         self.item = item
 
-    def aproved_case(self, region_x, region_y, region_w, region_h):
+    def aproved_case(self, region_x, region_y, region_w, region_h, key_word):
         try:
-            # Recortar la región específica
-            region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
 
-            # Aplicar OCR para extraer el texto
-            text = pytesseract.image_to_string(region).strip()
+            words = self.data_ocr['text']
 
-            # Reemplazar caracteres problemáticos
-            text = text.replace("-", " ").replace(".","").replace("\\","").replace("/","")
+            for i, word in enumerate(words): 
+                x,y = self.data_ocr['left'][i], self.data_ocr['top'][i]
 
-            # Dividir por líneas y eliminar espacios extra
-            text = [line.strip() for line in text.split("\n") if line.strip()]
+                if key_word == word:
 
-            # Filtrar posibles errores (puedes mejorar este criterio)
-            if text:
-                return " ".join(text)  # Devolver como una sola línea de texto
+                    region_x = x + region_x 
+                    region_y = y + region_y 
+
+
+                    # Recortar la región específica
+                    region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
+
+                    # Aplicar OCR para extraer el texto
+                    text = pytesseract.image_to_string(region).strip()
+
+                    # Reemplazar caracteres problemáticos
+                    text = text.replace("-", " ").replace(".","").replace("\\","").replace("/","").replace(":","")
+
+                    # Dividir por líneas y eliminar espacios extra
+                    text = [line.strip() for line in text.split("\n") if line.strip()]
+
+                    # Filtrar posibles errores (puedes mejorar este criterio)
+                    # if text:
+                    return " ".join(text)  # Devolver como una sola línea de texto
+                        
         except Exception as e:
             print(f"Error en OCR: {e}")
 
@@ -47,7 +60,7 @@ class Model():
 
             for i, word in enumerate(self.data_ocr['text']):
                 x,y,w,h = self.data_ocr['left'][i], self.data_ocr['top'][i], self.data_ocr['width'][i], self.data_ocr['height'][i]
-
+                
                 match word: 
                     #42B
                     case "Priority":
@@ -196,35 +209,24 @@ class Model():
             for i, word in enumerate(self.data_ocr['text']): 
                 x,y,w,h = self.data_ocr['left'][i], self.data_ocr['top'][i], self.data_ocr['width'][i], self.data_ocr['height'][i]
 
+                # print(i)
+
                 match word: 
-                    case "Receipt":
-                        region_x = 330
-                        region_y = 335
-                        region_w = 91
-                        region_h = 40
+                    case "Removal":
+                        region_x = x - 390 
+                        region_y = y - 14
+                        region_w = 270
+                        region_h = 95
 
                         region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
                         status = pytesseract.image_to_string(region)
                         status = status.replace("\n", "").replace("/","")
-
-                        print(status)
 
                         if "Asylu" in status or "Asvlu" in status:
                             return "Payment_receipt"
-                
-                    case "Previously":
-                        region_x = 941 
-                        region_y = 275
-                        region_w = 88
-                        region_h = 34
-                        region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
-                        status = pytesseract.image_to_string(region)
-                        status = status.replace("\n", "").replace("/","")
-
-                        print(status)
 
                     case "REMOVAL": 
-                            region_x = x - 10
+                            region_x = x - 380
                             region_y = y - 50
                             region_w = 248
                             region_h = 134
@@ -232,35 +234,33 @@ class Model():
                             status = pytesseract.image_to_string(region)
                             status = status.replace("\n", "").replace("/","")
 
-                            # print(status)
+                            if "Applicants" in status: 
+                                return "Reused"
+                            else:
+                                region_x = x - 10
+                                region_y = y - 50
+                                region_w = 248
+                                region_h = 134
+                                region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
+                                status = pytesseract.image_to_string(region)
+                                status = status.replace("\n", "").replace("/","")
 
-                            if "589" in status: 
-                                return "Defensive_receipt"
+                                if "589" in status: 
+                                    return "Defensive_receipt"
                     
-                    case "Priority":
-
-                        region_x = x
-                        region_y = y
-                        region_w = 140
-                        region_h = 140
+                    case "Applicant":
+                        
+                        region_x = x - 3
+                        region_y = y - 35
+                        region_w = 440
+                        region_h = 50
 
                         region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
                         status = pytesseract.image_to_string(region)
                         status = status.replace("\n", "").replace("/", "")
 
-                        if "Page2" in status: 
+                        if "765" in status: 
                             return "Receipts"
-                        else: 
-                            region_x = x - 1
-                            region_h = 141
-                            region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h)) 
-                            status = pytesseract.image_to_string(region)
-                            status = status.replace("/","").replace("\n", "")
-
-                            if "Page2" in status: 
-                                return "Receipts" 
-                            else: 
-                                return False
 
                     case "Appointment":                   
                         region_x = x - 65
@@ -308,11 +308,11 @@ class Model():
                                 status = pytesseract.image_to_string(region)
                                 status = status.replace("/","").replace("\n", "")
 
-                                print(status)
                                 if "I485" in status or "1485" in status or "485" in status or "1765" in status or "765" in status or "EOIR42" in status or "89" in status:
                                     return "Appointment"
                                 else: 
                                     return False
+
 
         except Exception as e: 
             print(f"Error in asylum search module: {e}")

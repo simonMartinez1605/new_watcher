@@ -1,0 +1,122 @@
+[
+    {
+        "pdf": "Approved_cases_asylum",
+        "name": [
+            {
+                "x": -422,
+                "y": 157,
+                "width": 534,
+                "height": 52
+            }
+        ],
+        "a_number": [
+            {
+                "x": -4,
+                "y": 12,
+                "width": 146,
+                "height": 35
+            }
+        ], 
+        "key_word":"Applicant"
+    },
+    {
+        "pdf": "Asylum_receipt",
+        "name": [
+            {
+                "x": -407,
+                "y": 169,
+                "width": 529,
+                "height": 30
+            }
+        ], 
+        "a_number":[
+            {
+                "x": 453,
+                "y": -15,
+                "width": 175,
+                "height": 38
+            }
+        ], 
+        "key_word":"Removal"
+    },
+    {
+        "pdf": "Appointment_asylum", 
+            "name": [
+            {
+                "x": 40,
+                "y": 100,
+                "width": 556,
+                "height": 35
+            }
+        ], 
+        "a_number":[
+            {
+                "x": 1096,
+                "y": 55,
+                "width": 162,
+                "height": 55
+            }
+        ], 
+        "key_word":"ASC"
+    },
+    {
+        "pdf": "Application_to_asylum",
+        "name": [
+            {
+                "x": 180,
+                "y": 427,
+                "width": 550,
+                "height": 49
+            }
+        ], 
+        "a_number":[
+            {
+                "x": 932,
+                "y": 299,
+                "width": 170,
+                "height": 32
+            }
+        ], 
+        "key_word":"APPLICATION"
+    },
+    {
+        "pdf": "Defensive_receipt",
+        "name": [
+            {
+                "x": 2.5,
+                "y": 55,
+                "width": 658,
+                "height": 39.5
+            }
+        ], 
+        "a_number":[
+            {
+                "x": 83,
+                "y": 24,
+                "width": 181,
+                "height": 43
+            }
+        ], 
+        "key_word":"REMOVAL"
+    },
+    {
+        "pdf": "Reused_asylum",
+        "name": [
+            {
+                "x": -452,
+                "y": 125,
+                "width": 573,
+                "height": 31
+            }
+        ], 
+        "a_number":[
+            {
+                "x": 538,
+                "y": 29,
+                "width": 166,
+                "height": 45
+            }
+        ], 
+        "key_word":"REMOVAL"
+    }
+]
