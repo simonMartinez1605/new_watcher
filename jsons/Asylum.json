@@ -60,6 +60,26 @@
         "key_word":"ASC"
     },
     {
+        "pdf": "Appointment_asylum_2020", 
+            "name": [
+            {
+                "x": 193,
+                "y": 362,
+                "width": 566,
+                "height": 51
+            }
+        ], 
+        "a_number":[
+            {
+                "x": 1249,
+                "y": 258,
+                "width": 164,
+                "height": 55
+            }
+        ], 
+        "key_word":"ASC"
+    },
+    {
         "pdf": "Application_to_asylum",
         "name": [
             {
@@ -118,5 +138,25 @@
             }
         ], 
         "key_word":"REMOVAL"
+    }, 
+    {
+        "pdf": "Reject",
+        "name": [
+            {
+                "x": -407,
+                "y": -383,
+                "width": 540,
+                "height": 42
+            }
+        ], 
+        "a_number": [
+            {
+                "x": -1135,
+                "y": -389,
+                "width": 196,
+                "height": 51
+            }
+        ], 
+        "key_word":"Removal"
     }
 ]

@@ -28,10 +28,16 @@ class Model():
             for i, word in enumerate(words): 
                 x,y = self.data_ocr['left'][i], self.data_ocr['top'][i]
 
+
                 if key_word == word:
+
+                    # print(region_x - x)
+                    # print(region_y - y)
 
                     region_x = x + region_x 
                     region_y = y + region_y 
+
+                    # print(region_x, region_y, x, y)
 
 
                     # Recortar la región específica
@@ -45,6 +51,8 @@ class Model():
 
                     # Dividir por líneas y eliminar espacios extra
                     text = [line.strip() for line in text.split("\n") if line.strip()]
+
+                    # print(f"Text extract: {"".join(text)}")
 
                     # Filtrar posibles errores (puedes mejorar este criterio)
                     # if text:
@@ -122,7 +130,7 @@ class Model():
                                 else:
                                     return False
                             
-                    case "Appointment":
+                    case "ADJUST":
                         region_x = x + 380
                         region_y = y + 6
                         region_w = 110
@@ -132,32 +140,28 @@ class Model():
                         status = pytesseract.image_to_string(region)
                         status = status.replace("\n", "").replace("/","")
 
-                        # status = re.sub(r"\D", "", status)
-
                         status = f"{status}"
-                        print(status)
+                        # print(status)
 
-                        if "I485" in status or "1485" in status or "485" in status or "1765" in status or "765" in status or "EOIR42" in status or "89" in status:
+                        if "I485" in status or "1485" in status or "85" in status or "1765" in status or "765" in status or "EOIR42" in status or "89" in status:
                             return "Appointment"
                         else:
-                            region_x = x - 65
-                            region_y = y + 22
-                            region_w = 130
-                            region_h = 110
+                            region_x = x + 20
+                            region_y = y - 170
+                            region_w = 350
+                            region_h = 100
                             region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
                             status = pytesseract.image_to_string(region)
                             status = status.replace("/","").replace("\n", "")
 
-                            # status = re.sub(r"\D", "", status)
-
+                            status = f"{status}"
                             print(status)
 
-                            status = f"{status}"
-
-                            if "I485" in status or "1485" in status or "485" in status or "1765" in status or "765" in status or "EOIR42" in status or "89" in status:
+                            if "Appointment" in status:
                                 return "Appointment"
-                            else:
-                                return False
+                            
+                            if "Applicants" in status:
+                                return "Reused"
                 
                     case "Applicants":
                         region_x = x + 150
@@ -212,6 +216,22 @@ class Model():
                 # print(i)
 
                 match word: 
+                    
+                    case "Reference": 
+                        region_x = x - 200
+                        region_y = y 
+                        region_w = 250
+                        region_h = 50
+
+                        region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
+                        status = pytesseract.image_to_string(region)
+                        status = status.replace("\n", "").replace("/","")
+
+                        if "Reject" in status: 
+                            return "Reject"
+                        else: 
+                            return False
+
                     case "Removal":
                         region_x = x - 390 
                         region_y = y - 14
@@ -298,6 +318,8 @@ class Model():
                             status = pytesseract.image_to_string(region)
                             status = status.replace("/","").replace("\n", "")
 
+                            print(status)
+
                             if "I485" in status or "1485" in status or "485" in status or "1765" in status or "765" in status or "EOIR42" in status or "89" in status:
                                 return "Appointment"
                             else: 
@@ -308,11 +330,12 @@ class Model():
                                 status = pytesseract.image_to_string(region)
                                 status = status.replace("/","").replace("\n", "")
 
+                                print(status)
+
                                 if "I485" in status or "1485" in status or "485" in status or "1765" in status or "765" in status or "EOIR42" in status or "89" in status:
                                     return "Appointment"
                                 else: 
                                     return False
-
 
         except Exception as e: 
             print(f"Error in asylum search module: {e}")
