@@ -3,17 +3,17 @@
         "pdf": "Approved_cases_asylum",
         "name": [
             {
-                "x": -422,
-                "y": 157,
-                "width": 534,
-                "height": 52
+                "x": -424,
+                "y": 138,
+                "width": 486,
+                "height": 61
             }
         ],
         "a_number": [
             {
-                "x": -4,
+                "x": -2,
                 "y": 12,
-                "width": 146,
+                "width": 160,
                 "height": 35
             }
         ], 
@@ -43,41 +43,62 @@
         "pdf": "Appointment_asylum", 
             "name": [
             {
-                "x": 40,
-                "y": 100,
+                "x": -413,
+                "y": 28,
                 "width": 556,
                 "height": 35
             }
         ], 
         "a_number":[
             {
-                "x": 1096,
-                "y": 55,
-                "width": 162,
+                "x": 636,
+                "y": -36,
+                "width": 168,
                 "height": 55
             }
         ], 
-        "key_word":"ASC"
+        "key_word":"WITHHOLDING"
     },
     {
-        "pdf": "Appointment_asylum_2020", 
+        "pdf": "Appointment_asylum_2020",
             "name": [
             {
-                "x": 193,
-                "y": 362,
+                "x": -422,
+                "y": 75,
                 "width": 566,
-                "height": 51
+                "height": 60
             }
         ], 
         "a_number":[
             {
-                "x": 1249,
-                "y": 258,
-                "width": 164,
-                "height": 55
+                "x": 630,
+                "y": -40,
+                "width": 180,
+                "height": 70
+
             }
         ], 
-        "key_word":"ASC"
+        "key_word":"WITHHOLDING"
+    },
+    {
+        "pdf": "Appointment_asylum_2019",
+            "name": [
+            {
+                "x": -365,
+                "y": 69,
+                "width": 480,
+                "height": 58
+            }
+        ], 
+        "a_number":[
+            {
+                "x": 543,
+                "y": -10,
+                "width": 330,
+                "height": 60
+            }
+        ], 
+        "key_word":"WITHHOLDING"
     },
     {
         "pdf": "Application_to_asylum",
@@ -103,21 +124,21 @@
         "pdf": "Defensive_receipt",
         "name": [
             {
-                "x": 2.5,
-                "y": 55,
-                "width": 658,
-                "height": 39.5
+                "x": -1037,
+                "y": -28,
+                "width": 524,
+                "height": 57
             }
         ], 
         "a_number":[
             {
-                "x": 83,
-                "y": 24,
-                "width": 181,
-                "height": 43
+                "x": -284,
+                "y": -156,
+                "width": 196,
+                "height": 36
             }
         ], 
-        "key_word":"REMOVAL"
+        "key_word":"Defensive"
     },
     {
         "pdf": "Reused_asylum",
@@ -157,6 +178,46 @@
                 "height": 51
             }
         ], 
+        "key_word":"Removal"
+    }, 
+    {
+        "pdf":"Reject_2020",
+        "name":[
+            {
+                "x": -83,
+                "y": 115,
+                "width": 519,
+                "height": 48
+            }
+        ], 
+        "a_number":[
+            {
+                "x": -558,
+                "y": 76,
+                "width": 227,
+                "height": 85
+            }
+        ], 
+        "key_word":"Type"
+    }, 
+    {
+        "pdf": "Receipt",
+        "name": [
+            {
+                "x": -637,
+                "y": -473,
+                "width": 534,
+                "height": 50
+            }
+        ], 
+        "a_number":[
+            {
+                "x": 135,
+                "y": -602,
+                "width": 195,
+                "height": 30
+            }
+        ],
         "key_word":"Removal"
     }
 ]

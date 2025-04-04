@@ -21,12 +21,13 @@ smbclient.ClientConfig(username=os.getenv('SERVER_USER'), password=os.getenv('SE
 # Carpetas a monitorear dentro del servidor
 folders_to_monitor = [
     rf"\\{path_share_folder}\42BReceipts",
-    rf"\\{path_share_folder}\Criminal",
-    rf"\\{path_share_folder}\Asylum",
+    # rf"\\{path_share_folder}\Criminal",
+    rf"\\{path_share_folder}\Asylum"
 ]
 
-# Función para esperar a que el documento se haya guardado completamente
-def wait_doc(pdf_path, timeout, attempts):
+def wait_doc(pdf_path : str, timeout : int, attempts : int) -> bool:
+    """Función para esperar a que el documento se haya guardado completamente"""
+
     for _ in range(attempts):
         last_size = os.path.getsize(pdf_path)
         time.sleep(timeout)
@@ -36,12 +37,32 @@ def wait_doc(pdf_path, timeout, attempts):
 
     return False
 
-# Función para monitorear las carpetas
-def monitor_folder(folder):
+def monitor_folder(folder : str) -> None:
+    """
+
+    Funcion para monitorear Paths de carpetas en especificio. Por lo general a dichas carpetas deben de entrar PDFs para realizar indexing
+    y guardarlos en sharepoint
+
+    Parametros
+    -----------
+
+    folder: str
+        * Path de la ruta que se desea monitorear
+
+    Funciones y variables de importacia
+    ------------------------------------
+
+    option: str 
+        * Hay que tener en cuenta que el sharepoint en el que va a guardar la informacion debe tener el mismo nombre que la carpeta 
+
+    indexing: 
+        * Esta es la funcion principal para realizar el indexing de los documentos que entran a la carpeta que se esta monitoreando
+    
+    """
     print(f"Monitoring folder: {folder}")
     #Desglose de la ruta de la carpeta para obtener el nombre de la carpeta
     processed_path = Path(folder) / "Process"
-    option = Path(folder).name #Con respecto a esta variable hay que tener en cuenta que el sharepoint en el que va a guardar la informacion debe tener el mismo nombre que la carpeta 
+    option = Path(folder).name 
     while True:
         try:
             #Obtención de los documentos en la carpeta

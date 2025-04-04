@@ -65,7 +65,7 @@ def search_in_doc(page, name_doc : str, type_data : str, json_type : str) -> boo
     # Si no se encuentra el documento o el tipo de dato, retorna None o alguna respuesta por defecto
     return None
 
-def save_and_ocr(pdf_save : str, processed_path : str, result : list, doc_name : str, option : str):
+def save_and_ocr(pdf_save : str, processed_path : str, result : list, doc_name : str, option : str) -> bool:
     """Guarda el PDF combinado en la carpeta de procesados, aplica OCR y lo sube a SharePoint."""
 
     # Asegurar que la carpeta de procesados existe
@@ -74,13 +74,13 @@ def save_and_ocr(pdf_save : str, processed_path : str, result : list, doc_name :
     #Validacion de datos y manejo de errores en carpetas individuales
     error = errors_folder(pdf_save, processed_path, result)
     if error == True: 
-        return False 
+        return False
     else: 
         #Concatenar el path con el nombre encontrado para poder guardarlo
         output_pdf_path = os.path.join(processed_path, f"{result['name']}.pdf")
 
-        # name = regex_name(result['name'])
-        name = result["name"]
+        name = regex_name(result['name'])
+        # name = result["name"]
         alien_number = regex_alien_number(result['alien_number'])
 
         print(f"Name: {name} Alien Number: {alien_number}")
@@ -119,7 +119,7 @@ def indexing(pdf : str, option: str, input_path: str, processed_path: str):
     pages = convert_from_path(os.path.join(input_path, pdf))
     pdf_save = PdfWriter()
 
-    # ocr(pdf)
+    # ocr(pdf)  
 
     #Funcion de ejecucion general para no generar codigo innecesario
     def exect_funct(type_name, doc_name, page, json_type, sheets_quantiy): 
@@ -174,30 +174,47 @@ def indexing(pdf : str, option: str, input_path: str, processed_path: str):
                 case"Asylum":
                     doc_type = model.find_receipts_asylum()
 
-                    print(doc_type)
+                    # print(doc_type)
 
                     match doc_type:
                         case "Appointment":
                             exect_funct("Appointment_asylum", doc_type, page, "Asylum",1)
                             pdf_save = PdfWriter()
-                        case "Receipts":
+                        case "Appointment_asylum_2020":
+                            exect_funct("Appointment_asylum_2020", "Appointment", page, "Asylum", 1)
+                            pdf_save = PdfWriter()
+                        case "Appointment_asylum_2019":
+                            exect_funct("Appointment_asylum_2019", "Appointment" ,page, "Asylum",1)
+                            pdf_save = PdfWriter()
+                        case "Approved_receipts":
                             exect_funct("Approved_cases_asylum", doc_type, page, "Asylum",1)
                             pdf_save = PdfWriter()
                         case "Payment_receipt":
                             exect_funct("Asylum_receipt", doc_type, page, "Asylum",1)
                             pdf_save = PdfWriter()
-                        case "Defensive_receipt": 
+                        case "Defensive_receipt":
                             exect_funct("Defensive_receipt", doc_type, page, "Asylum",1)
                             pdf_save = PdfWriter()
-                        case "Application_to_asylum": 
-                            xect_funct("Application_to_asylum", doc_type, page, "Asylum",1)
-                            pdf_save = PdfWriter() 
-                        case "Reused": 
+                        case "Application_to_asylum":
+                            exect_funct("Application_to_asylum", doc_type, page, "Asylum",1)
+                            pdf_save = PdfWriter()
+                        case "Reused":
                             exect_funct("Reused_asylum", doc_type, page, "Asylum",1)
                             pdf_save = PdfWriter()
-                        case "Reject": 
+                        case "Reject":
                             exect_funct("Reject", doc_type, page, "Asylum", 1)
-                            pdf_save = PdfWriter() 
+                            pdf_save = PdfWriter()
+                        case "Reject_2020":
+                            exect_funct("Reject_2020", "Reject", page, "Asylum", 1)
+                            pdf_save = PdfWriter()
+                        case "Receipt":
+                            exect_funct("Receipt", doc_type, page, "Asylum", 1)
+                            pdf_save = PdfWriter()
+                        
+                        case None: 
+                            print(f"❌ Error in document type: {doc_type}")
+                            errors_folder(pdf_save, processed_path, None)
+                            pdf_save = PdfWriter()
 
                 case"Criminal": 
                     
