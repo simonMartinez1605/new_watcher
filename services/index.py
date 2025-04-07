@@ -174,7 +174,7 @@ def indexing(pdf : str, option: str, input_path: str, processed_path: str):
                 case"Asylum":
                     doc_type = model.find_receipts_asylum()
 
-                    # print(doc_type)
+                    print(doc_type)
 
                     match doc_type:
                         case "Appointment":

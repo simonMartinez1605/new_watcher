@@ -2,12 +2,14 @@ from dotenv import load_dotenv
 from services.index import indexing
 from rich.console import Console
 from pathlib import Path
+from testing.test_QA import QAWindow, QApplication
 import smbclient
 import os
 import time
 import uuid
 import threading
 import logging
+import sys
 
 load_dotenv()
 

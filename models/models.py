@@ -341,29 +341,38 @@ class Model():
                             region_x = x + 794
                             region_y = y - 83
                             region_w = 250
-                            region_h = 170
+                            region_h = 180
                             region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
                             status = pytesseract.image_to_string(region)
                             status = status.replace("/","").replace("\n", "")
+
+                            # print(status)
 
                             if "2020" in status: 
                                 result.append("Appointment_asylum_2020")
                             elif "2024" in status or "2025" in status: 
                                 result.append("Appointment")
+                            elif "2019" in status:
+                                result.append("Appointment_asylum_2019")
                             else: 
                                 region_x = x + 852
                                 region_y = y - 94.5
                                 region_w = 350
-                                region_h = 200
+                                region_h = 250
                                 region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
                                 status = pytesseract.image_to_string(region)
                                 status = status.replace("/","").replace("\n", "")
 
                                 status = re.sub(r'\D', "", status)
 
-                                if "019" in status or "219" in status: 
-                                    result.append("Appointment_asylum_2019")
+                                # print(status)
 
+                                if "019" in status or "219" in status or "2059" in status: 
+                                    result.append("Appointment_asylum_2019")
+                                elif "2020" in status:
+                                    result.append("Appointment_asylum_2020")
+
+            # print(result)
             if result == []: 
                 return None 
             return result[0]
