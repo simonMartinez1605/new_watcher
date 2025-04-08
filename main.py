@@ -23,7 +23,7 @@ smbclient.ClientConfig(username=os.getenv('SERVER_USER'), password=os.getenv('SE
 # Carpetas a monitorear dentro del servidor
 folders_to_monitor = [
     rf"\\{path_share_folder}\42BReceipts",
-    # rf"\\{path_share_folder}\Criminal",
+    rf"\\{path_share_folder}\Criminal",
     rf"\\{path_share_folder}\Asylum"
 ]
 
