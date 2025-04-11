@@ -30,8 +30,8 @@ class Model():
 
                 if key_word == word:
 
-                    # print(region_x - x)
-                    # print(region_y - y)
+                    # print(f"X: {region_x - x}")
+                    # print(f"Y: {region_y - y}")
 
                     region_x = x + region_x
                     region_y = y + region_y
@@ -279,34 +279,65 @@ class Model():
                                     result.append("Receipt")
 
                     case "REMOVAL":
-                            
-                            region_x = x - 380
-                            region_y = y - 50
-                            region_w = 248
-                            region_h = 134
-                            region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
-                            status = pytesseract.image_to_string(region)
-                            status = status.replace("\n", "").replace("/","")
 
-                            if "Applicants" in status: 
-                                result.append("Reused")
+                        region_x = x - 380
+                        region_y = y - 50
+                        region_w = 248
+                        region_h = 134
+                        region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
+                        status = pytesseract.image_to_string(region)
+                        status = status.replace("\n", "").replace("/","")
+
+                        if "Applicants" in status: 
+                            result.append("Reused")
                     
                     case "Defensive": 
-                        # print(x, y)
+
                         region_x = x - 375
-                        region_y = y -228
+                        region_y = y - 228
                         region_w = 233
                         region_h = 73
                         region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
                         status = pytesseract.image_to_string(region)
                         status = status.replace("\n", "").replace("/","")
 
-                        if "1589" in status: 
-                            result.append("Defensive_receipt")
-                    
-                    case "Applicant":
+                        if "589" in status: 
+                            result.append("Defensive_receipt_2020")
+                        else: 
+                            region_x = x - 690
+                            region_y = y - 260
+                            region_w = 825
+                            region_h = 81
+                            region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
+                            status = pytesseract.image_to_string(region)
+                            status = status.replace("\n", "").replace("/","")
+                            
+                            if "89" in status: 
+                                result.append("Defensive_receipt_2019")
+                            else: 
+                                region_x = x - 440
+                                region_y = y - 190
+                                region_w = 370
+                                region_h = 80
+                                region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
+                                status = pytesseract.image_to_string(region)
+                                status = status.replace("\n", "").replace("/","")
+                                
+                                if "589" in status: 
+                                    region_x = x - 1030
+                                    region_y = y - 72
+                                    region_w = 133
+                                    region_h = 60
+                                    region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
+                                    status = pytesseract.image_to_string(region)
+                                    status = status.replace("\n", "").replace("/","")
 
-                        region_x = x - 3
+                                    if "2024" in status: 
+                                        result.append("Defensive_receipt_2024")
+                    
+                    case "Applican":
+
+                        region_x = x + 3
                         region_y = y - 35
                         region_w = 440
                         region_h = 50
@@ -315,13 +346,17 @@ class Model():
                         status = pytesseract.image_to_string(region)
                         status = status.replace("\n", "").replace("/", "")
 
-                        if "765" in status:
+                        # print(status)
+
+                        if "765" in status or "APPLICATION" in status:
 
                             region_x = x + 524
                             region_y = y + 156
                             region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
                             status = pytesseract.image_to_string(region)
                             status = status.replace("\n", "").replace("/", "")
+
+                            # print(status)
 
                             if "Approval" in status:
                                 result.append("Approved_receipts")

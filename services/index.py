@@ -1,244 +1,260 @@
+import os
+import json
+import shutil
+import uuid
+import traceback
+import numpy as np
+import random
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from io import BytesIO
 from pdf2image import convert_from_path
 from PyPDF2 import PdfWriter
-from models.models import Model
-from services.ocr import ocr
-from dotenv import load_dotenv
-from services.conection import sharepoint
-from io import BytesIO
-from services.deskewing import deskew_image
-from errors.errors import custom_errors, errors_folder, regex_name, regex_alien_number
-from PIL import Image
-import os
+from PIL import Image, ImageFilter
 import pytesseract
-import shutil
-import traceback
-import uuid
-import json
-import re
-import numpy as np
+from dotenv import load_dotenv
+from services.deskewing import deskew_image
+from models.models import Model
+from errors.errors import regex_name, regex_alien_number
 
+# Cargar variables de entorno
 load_dotenv()
 
-def load_json(file_path : str) -> json:
-    """Funcion para cargar el JSON de las coordenadas"""
-    with open(file_path, 'r', encoding='utf-8') as f:
-        data = json.load(f)
-    return data
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+# Configuración global
+_JSON_CACHE = {}
 
-def process_page(page : list):
-    """Procesa una sola página del PDF con OCR después de corregir la inclinación."""
-    open_cv_image = np.array(page)
-    open_cv_image = deskew_image(open_cv_image)  # Aplicar deskewing
-    
-    # Convertir el array de numpy de vuelta a PIL Image
-    pil_image = Image.fromarray(open_cv_image)
-    
-    data_ocr_page = pytesseract.image_to_data(open_cv_image, output_type=pytesseract.Output.DICT)
-    return Model(data_ocr_page, pil_image)
+def load_json_cached(file_path: str) -> dict:
+    """Carga JSON con caché para evitar lecturas repetidas de disco"""
+    if file_path not in _JSON_CACHE:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            _JSON_CACHE[file_path] = json.load(f)
+    return _JSON_CACHE[file_path]
 
-def search_in_doc(page, name_doc : str, type_data : str, json_type : str) -> bool:
+def preprocess_image(image):
+    """Mejora la imagen para OCR"""
+    return image.filter(ImageFilter.SHARPEN).convert('L')
 
-    """Uso de coordenadas para buscar nombre y alien number en cada caso"""
-
-    model = process_page(page)
-
-    # Cargar el JSON
-    json = fr"C:\Users\simon\OneDrive\Documents\Simon\Python\new_watcher\jsons\{json_type}.json"
-    json_result = load_json(json)
-    # Iterar sobre la lista de documentos
-    for i, doc in enumerate(json_result):
-        if doc["pdf"] == name_doc:  # Comprobar si el 'pdf' coincide con 'name_doc'
-            # Verificar si el 'type_data' está presente en el documento
-            key_word = doc['key_word']
-            if type_data in doc:
-                # Iterar sobre las coordenadas dentro del tipo de dato (por ejemplo, 'name' o 'a_number')
-                for coord in doc[type_data]:
-                    x = coord['x']
-                    y = coord['y']
-                    width = coord['width']
-                    height = coord['height']
-                    result = model.aproved_case(x, y, width, height, key_word)
-                    if not result == None:
-                        if len(result) > 15 and len(result) < 70:
-                            return result
-                return result
-    # Si no se encuentra el documento o el tipo de dato, retorna None o alguna respuesta por defecto
-    return None
-
-def save_and_ocr(pdf_save : str, processed_path : str, result : list, doc_name : str, option : str) -> bool:
-    """Guarda el PDF combinado en la carpeta de procesados, aplica OCR y lo sube a SharePoint."""
-
-    # Asegurar que la carpeta de procesados existe
-    os.makedirs(processed_path, exist_ok=True)
-
-    #Validacion de datos y manejo de errores en carpetas individuales
-    error = errors_folder(pdf_save, processed_path, result)
-    if error == True: 
-        return False
-    else: 
-        #Concatenar el path con el nombre encontrado para poder guardarlo
-        output_pdf_path = os.path.join(processed_path, f"{result['name']}.pdf")
-
-        name = regex_name(result['name'])
-        # name = result["name"]
-        alien_number = regex_alien_number(result['alien_number'])
-
-        print(f"Name: {name} Alien Number: {alien_number}")
-        #Combinar documentos !! Si aplica
-        with open(output_pdf_path, "wb") as output_pdf:
-            pdf_save.write(output_pdf)
-
-        print(f"Combined PDF saved as {output_pdf_path}")
-        
-        ocr(output_pdf_path)
-        print(f"OCR completed for {output_pdf_path}")
-
-        #Funcion para subir el documento y los metadados al sharepoint
-        sharepoint(output_pdf_path, f"{name}-{doc_name}.pdf", alien_number, option, doc_name)
-
+def needs_deskewing(image):
+    """Determina si la imagen necesita corrección de inclinación"""
+    # Implementación básica - puedes mejorarla con detección de bordes
     return True
 
-def indexing(pdf : str, option: str, input_path: str, processed_path: str):
-    """
-    Convierte un PDF a imágenes, aplica OCR y clasifica documentos.
-    
-    Parametros: 
-    -----------
-
-    pdf: str
-        Path de donde se encuentra el documento que deseas procesar
-    option: str
-        Nombre del sharepoint en donde se va a guardar el pdf (Este sharepoint debe de ser un sitio)
-    input_path: str
-        Path de la carpeta que constantemente se revisa
-    processed_path: str
-        Path de la carpeta en donde se almacenan todos los documentos procesados
-    
-    """
-    #convertir cada una de las paginas del archivo PDF en independientes
-    pages = convert_from_path(os.path.join(input_path, pdf))
-    pdf_save = PdfWriter()
-
-    # ocr(pdf)  
-
-    #Funcion de ejecucion general para no generar codigo innecesario
-    def exect_funct(type_name, doc_name, page, json_type, sheets_quantiy): 
-        
-        #Ejecucion de la funcion de busqueda, especificamente pasando la pagina, el tipo de documeto, el lo que se va a buscar, ya sea el nombre o el alien number y por ultimo el json en donde se almacenaron las coordenadas
-        name = search_in_doc(page,type_name, "name",json_type)
-        #Ejecucion de funcion para parametrizar el nombre 
-        alien_number = search_in_doc(page,type_name, "a_number",json_type)
-
-        error = custom_errors(pdf_save.pages, sheets_quantiy)
-
-        if error == True: 
-            result = None 
-            errors_folder(pdf_save, processed_path, result)
-        else: 
-            result = {"name": name, "alien_number": alien_number}
-
-            #Pasarle el resultado a la funcion que realizar el OCR y guarda los documentos en sharepoint
-            save_and_ocr(pdf_save, processed_path, result, doc_name, option)
+def process_page_optimized(page):
+    """Versión optimizada del procesamiento de página"""
     try:
-        #Iterar sobre las hojas del documento escaneado
-        for page in pages:
-            #Funcion para procesar imagenes
-            model = process_page(page)
-            image_stream = BytesIO()
-            page.save(image_stream, format="PDF") #Agregar cada hoja en el PDF temporal
-            pdf_save.append(image_stream)
-
-            #validacion de datos utilizando la clase de modelos de busqueda
-            match option:
-                case "42BReceipts":
-                    doc_type = model.find_receipts()
-
-                    print(doc_type)
-
-                    #Validacion de cada uno de los documentos que se pueden encontrar
-                    match doc_type:
-                        case "Payment":
-                            exect_funct("Payment", doc_type, page,"42B",1)
-                            pdf_save = PdfWriter()  # Reset para siguiente documento
-                        case "Receipts":
-                            
-                            exect_funct("Receipts_42B", doc_type, page,"42B",2)
-                            pdf_save = PdfWriter()
-                        case "Appointment":
-                            exect_funct("Appointment_42B", doc_type, page,"42B",1)
-                            pdf_save = PdfWriter()
-                        case "Reused":
-                            exect_funct("Reused_42B", doc_type, page,"42B",1)
-                            pdf_save = PdfWriter()
-
-                case"Asylum":
-                    doc_type = model.find_receipts_asylum()
-
-                    print(doc_type)
-
-                    match doc_type:
-                        case "Appointment":
-                            exect_funct("Appointment_asylum", doc_type, page, "Asylum",1)
-                            pdf_save = PdfWriter()
-                        case "Appointment_asylum_2020":
-                            exect_funct("Appointment_asylum_2020", "Appointment", page, "Asylum", 1)
-                            pdf_save = PdfWriter()
-                        case "Appointment_asylum_2019":
-                            exect_funct("Appointment_asylum_2019", "Appointment" ,page, "Asylum",1)
-                            pdf_save = PdfWriter()
-                        case "Approved_receipts":
-                            exect_funct("Approved_cases_asylum", doc_type, page, "Asylum",1)
-                            pdf_save = PdfWriter()
-                        case "Payment_receipt":
-                            exect_funct("Asylum_receipt", doc_type, page, "Asylum",1)
-                            pdf_save = PdfWriter()
-                        case "Defensive_receipt":
-                            exect_funct("Defensive_receipt", doc_type, page, "Asylum",1)
-                            pdf_save = PdfWriter()
-                        case "Application_to_asylum":
-                            exect_funct("Application_to_asylum", doc_type, page, "Asylum",1)
-                            pdf_save = PdfWriter()
-                        case "Reused":
-                            exect_funct("Reused_asylum", doc_type, page, "Asylum",1)
-                            pdf_save = PdfWriter()
-                        case "Reject":
-                            exect_funct("Reject", doc_type, page, "Asylum", 1)
-                            pdf_save = PdfWriter()
-                        case "Reject_2020":
-                            exect_funct("Reject_2020", "Reject", page, "Asylum", 1)
-                            pdf_save = PdfWriter()
-                        case "Receipt":
-                            exect_funct("Receipt", doc_type, page, "Asylum", 1)
-                            pdf_save = PdfWriter()
-                        
-                        case None: 
-                            print(f"❌ Error in document type: {doc_type}")
-                            errors_folder(pdf_save, processed_path, None)
-                            pdf_save = PdfWriter()
-
-                case"Criminal": 
-                    
-                    count = len(pdf_save.pages) 
-                    total_pages = len(pages)
-
-                    if total_pages == count: 
-                        result = {"name":f"{uuid.uuid4()}", "alien_number":" "}
-                        save_and_ocr(pdf_save, processed_path,result," ", option)
-
-        # Mover el documento original a la carpeta de procesados para evitar duplicados
-        shutil.move(os.path.join(input_path, pdf), os.path.join(processed_path, pdf))
-    
+        # Preprocesamiento
+        pil_image = preprocess_image(page)
+        
+        # Convertir a numpy array manteniendo 3 canales si es necesario
+        if pil_image.mode == 'L':
+            # Si es escala de grises, convertir a RGB
+            pil_image = pil_image.convert('RGB')
+        
+        open_cv_image = np.array(pil_image)
+        
+        # Convertir de RGB a BGR (que es lo que OpenCV espera)
+        open_cv_image = open_cv_image[:, :, ::-1].copy()
+        
+        # Deskewing condicional
+        if needs_deskewing(open_cv_image):
+            open_cv_image = deskew_image(open_cv_image)
+            
+            # Convertir de vuelta a RGB para PIL
+            open_cv_image = open_cv_image[:, :, ::-1]
+        
+        # Configuración optimizada para Tesseract
+        custom_config = r'--oem 3 --psm 6'
+        
+        # Convertir a escala de grises para Tesseract si es necesario
+        ocr_image = Image.fromarray(open_cv_image).convert('L') if open_cv_image.shape[2] == 3 else Image.fromarray(open_cv_image)
+        
+        data_ocr_page = pytesseract.image_to_data(
+            ocr_image, 
+            config=custom_config,
+            output_type=pytesseract.Output.DICT
+        )
+        
+        return Model(data_ocr_page, Image.fromarray(open_cv_image))
     except Exception as e:
-        print(f"Error in indexing module: {e}")
-        print(traceback.format_exc())
-        #Movimiento de los documentos cuando se presente un error general
-        error_path = os.path.join(input_path, "Errors", os.path.basename(pdf))
-        shutil.move(os.path.join(input_path, pdf), error_path)
+        print(f"Error procesando página: {e}")
+        traceback.print_exc()
+        return None
 
-if __name__ == "__main__":
-    input_path = "incoming_docs"   # Carpeta donde se encuentran los PDFs sin procesar
-    processed_path = "processed_docs"  # Carpeta donde se guardarán los PDFs procesados
-    pdf = "document.pdf"  
-    option = "42BReceipts"
+def search_in_doc_optimized(page, name_doc: str, type_data: str, json_type: str):
+    """Versión optimizada de búsqueda en documento"""
+    model = process_page_optimized(page)
+    if not model:
+        return None
+        
+    json_path = f"jsons/{json_type}.json"  # Ajusta la ruta
+    json_result = load_json_cached(json_path)
     
-    indexing(pdf, option, input_path, processed_path)
+    # Búsqueda más eficiente
+    matching_doc = next((doc for doc in json_result if doc["pdf"] == name_doc), None)
+    if not matching_doc or type_data not in matching_doc:
+        return None
+    
+    key_word = matching_doc['key_word']
+    for coord in matching_doc[type_data]:
+        result = model.aproved_case(
+            coord['x'], coord['y'], 
+            coord['width'], coord['height'], 
+            key_word
+        )
+        if result and 8 < len(result) < 70:
+            return result
+    return None
+
+def save_and_ocr_optimized(result, processed_path, option, pdf_save):
+    try:
+        os.makedirs(processed_path, exist_ok=True)
+        output_pdf_path = os.path.join(processed_path, f"{result['name']}.pdf")
+
+        # Guardar el PDF individual
+        with open(output_pdf_path, "wb") as output_pdf:
+            pdf_save.write(output_pdf)  # pdf_save contiene solo una página
+
+        return {
+            "name": regex_name(result['name']),
+            "alien_number": regex_alien_number(result['alien_number']),
+            "pdf": output_pdf_path,
+            "doc_type": result.get('doc_type'),
+            "folder_name": result.get('folder_name')
+        }
+    except Exception as e:
+        print(f"❌ Error guardando PDF individual: {e}")
+        return None
+
+def exect_funct_optimized(doc_type, page, option, processed_path, json_type, save_pdf):
+    """Versión optimizada de la función de ejecución"""
+    try:
+        # Mapeo de tipos de documento a sus parámetros
+        doc_config = {
+            "42BReceipts": {
+                "Payment": ("Payment", "42B", 1),
+                "Receipts": ("Receipts_42B", "42B", 2),
+                "Appointment": ("Appointment_42B", "42B", 1),
+                "Reused": ("Reused_42B", "42B", 1)
+            },
+            "Asylum": {
+                "Appointment": ("Appointment_asylum", "Asylum", 1, "Appointment"),
+                "Appointment_asylum_2020": ("Appointment_asylum_2020", "Asylum", 1, "Appointment"),
+                "Appointment_asylum_2019": ("Appointment_asylum_2019", "Asylum", 1, "Appointment"),
+                "Approved_receipts": ("Approved_cases_asylum", "Asylum", 1, "Approved_receipts"),
+                "Payment_receipt": ("Asylum_receipt", "Asylum", 1, "Payment_receipt"),
+                "Defensive_receipt_2024": ("Defensive_receipt_2024", "Asylum", 1, "Defensive_receipt"),
+                "Defensive_receipt_2020": ("Defensive_receipt_2020", "Asylum", 1, "Defensive_receipt"),
+                "Defensive_receipt_2019":("Defensive_receipt_2019", "Asylum", 1, "Defensive_receipt"),
+                "Application_to_asylum": ("Application_to_asylum", "Asylum", 1, "Application_to_asylum"),
+                "Reused": ("Reused_asylum", "Asylum", 1, "Reused"),
+                "Reject": ("Reject", "Asylum", 1, "Reject"),
+                "Reject_2020": ("Reject_2020", "Asylum", 1, "Reject"),
+                "Receipt": ("Receipt", "Asylum", 1, "Receipt")
+            }
+        }
+
+        # Obtener configuración según el tipo de documento
+        config = doc_config.get(option, {}).get(doc_type)
+        if not config:
+            print(f"❌ Tipo de documento no reconocido: {doc_type}")
+            result = {"name": f"{uuid.uuid4()}", "alien_number": f"{random.randint(1,10000)}", "doc_type": f"{uuid.uuid4()}", "folder_name":json_type}
+            return save_and_ocr_optimized(result, processed_path, option, save_pdf)
+
+        type_name, json_type, sheets_quantity, kind_of_doc = config
+
+        # Búsqueda optimizada
+        name = search_in_doc_optimized(page, type_name, "name", json_type)
+        alien_number = search_in_doc_optimized(page, type_name, "a_number", json_type)
+
+        if not name:
+            print(f"❌ No se encontraron datos en el documento: {name}")
+            name = f"{uuid.uuid4()}" 
+
+        if not alien_number: 
+            print(f"❌ No se encontraron datos en el documento: {alien_number}")
+            alien_number = f"A{random.randint(1, 10000)}"
+
+
+        result = {"name": name, "alien_number": alien_number, "doc_type": kind_of_doc, "folder_name":json_type}
+        return save_and_ocr_optimized(result, processed_path, option, save_pdf)
+
+    except Exception as e:
+        print(f"❌ Error en exect_funct_optimized: {e}")
+        traceback.print_exc()
+        return None
+
+def process_single_page(page, option, processed_path, json_type):
+    """Procesa una página individual con su propio PdfWriter"""
+    try:
+        pdf_save = PdfWriter()  # Nuevo PdfWriter para cada página
+        model = process_page_optimized(page)
+        if not model:
+            return None
+            
+        # Guardar página en PDF
+        image_stream = BytesIO()
+        page.save(image_stream, format="PDF")
+        pdf_save.append(image_stream)
+        
+        classification_functions = {
+            "42BReceipts": model.find_receipts,
+            "Asylum": model.find_receipts_asylum,
+        }
+        
+        classify_func = classification_functions.get(option)
+        if not classify_func:
+            print(f"⚠️ Tipo de carpeta no reconocido: {option}")
+            return None
+        
+        doc_type = classify_func()
+        
+        if not doc_type:
+            print(f"⚠️ No se pudo clasificar el documento en la carpeta {option}")
+            return exect_funct_optimized("Error", page, option, processed_path, json_type, pdf_save)
+
+        return exect_funct_optimized(doc_type, page, option, processed_path, json_type, pdf_save)
+        
+    except Exception as e:
+        print(f"❌ Error procesando página: {e}")
+        traceback.print_exc()
+        return None
+
+def process_pages_parallel(pages, option, processed_path, json_type):
+    """Procesa páginas en paralelo, cada una con su propio PDF"""
+    results = []
+    with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+        futures = [executor.submit(
+            process_single_page, 
+            page, option, processed_path, json_type
+        ) for page in pages]
+        
+        for future in as_completed(futures):
+            result = future.result()
+            if result:
+                results.append(result)
+    return results
+
+def optimized_indexing(pdf: str, option: str, input_path: str, processed_path: str):
+    """Versión optimizada de la función principal"""
+    try:
+        pdf_path = os.path.join(input_path, pdf)
+        
+        pages = convert_from_path(
+            pdf_path,
+            thread_count=4,
+            dpi=200,
+            grayscale=True,
+            poppler_path=r'C:\Users\simon\Downloads\Release-24.08.0-0\poppler-24.08.0\Library\bin'
+        )
+        
+        json_type = "42B" if option == "42BReceipts" else "Asylum"
+        results = process_pages_parallel(pages, option, processed_path, json_type)
+        
+        shutil.move(pdf_path, os.path.join(processed_path, pdf))
+        return [r for r in results if r is not None]
+        
+    except Exception as e:
+        print(f"Error en indexing: {e}")
+        error_path = os.path.join(input_path, "Errors", os.path.basename(pdf))
+        shutil.move(pdf_path, error_path)
+        return []

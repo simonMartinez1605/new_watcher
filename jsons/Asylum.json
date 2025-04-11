@@ -65,7 +65,7 @@
             {
                 "x": -422,
                 "y": 75,
-                "width": 566,
+                "width": 666,
                 "height": 60
             }
         ], 
@@ -86,7 +86,7 @@
             {
                 "x": -365,
                 "y": 69,
-                "width": 480,
+                "width": 680,
                 "height": 58
             }
         ], 
@@ -121,7 +121,28 @@
         "key_word":"APPLICATION"
     },
     {
-        "pdf": "Defensive_receipt",
+        "pdf": "Defensive_receipt_2024",
+        "name": [
+            {
+                "x": -990,
+                "y": -15,
+                "width": 577,
+                "height": 36
+            }
+            
+        ],
+        "a_number":[
+            {
+                "x": -246,
+                "y": -116,
+                "width": 162,
+                "height": 30
+            }
+        ], 
+        "key_word":"Defensive"
+    },
+    {
+        "pdf": "Defensive_receipt_2020",
         "name": [
             {
                 "x": -1037,
@@ -140,6 +161,26 @@
         ], 
         "key_word":"Defensive"
     },
+    {
+        "pdf": "Defensive_receipt_2019",
+        "name": [
+            {
+                "x": -1025,
+                "y": -29,
+                "width": 647,
+                "height": 55
+            }
+        ], 
+        "a_number":[
+            {
+                "x": -355,
+                "y": -193,
+                "width": 290,
+                "height": 40
+            }
+        ], 
+        "key_word":"Defensive"
+    }, 
     {
         "pdf": "Reused_asylum",
         "name": [
