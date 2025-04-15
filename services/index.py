@@ -101,7 +101,7 @@ def search_in_doc_optimized(page, name_doc: str, type_data: str, json_type: str)
             coord['width'], coord['height'], 
             key_word
         )
-        if result and 8 < len(result) < 70:
+        if result and 8 < len(result) < 170:
             return result
     return None
 
@@ -119,7 +119,7 @@ def save_and_ocr_optimized(result, processed_path, option, pdf_save):
             "alien_number": regex_alien_number(result['alien_number']),
             "pdf": output_pdf_path,
             "doc_type": result.get('doc_type'),
-            "folder_name": result.get('folder_name')
+            "folder_name": option
         }
     except Exception as e:
         print(f"❌ Error guardando PDF individual: {e}")
@@ -137,19 +137,21 @@ def exect_funct_optimized(doc_type, page, option, processed_path, json_type, sav
                 "Reused": ("Reused_42B", "42B", 1)
             },
             "Asylum": {
-                "Appointment": ("Appointment_asylum", "Asylum", 1, "Appointment"),
-                "Appointment_asylum_2020": ("Appointment_asylum_2020", "Asylum", 1, "Appointment"),
-                "Appointment_asylum_2019": ("Appointment_asylum_2019", "Asylum", 1, "Appointment"),
-                "Approved_receipts": ("Approved_cases_asylum", "Asylum", 1, "Approved_receipts"),
-                "Payment_receipt": ("Asylum_receipt", "Asylum", 1, "Payment_receipt"),
-                "Defensive_receipt_2024": ("Defensive_receipt_2024", "Asylum", 1, "Defensive_receipt"),
-                "Defensive_receipt_2020": ("Defensive_receipt_2020", "Asylum", 1, "Defensive_receipt"),
-                "Defensive_receipt_2019":("Defensive_receipt_2019", "Asylum", 1, "Defensive_receipt"),
-                "Application_to_asylum": ("Application_to_asylum", "Asylum", 1, "Application_to_asylum"),
-                "Reused": ("Reused_asylum", "Asylum", 1, "Reused"),
-                "Reject": ("Reject", "Asylum", 1, "Reject"),
-                "Reject_2020": ("Reject_2020", "Asylum", 1, "Reject"),
-                "Receipt": ("Receipt", "Asylum", 1, "Receipt")
+                "Appointment": ("Appointment_asylum", 1, "Appointment"),
+                "Appointment_asylum_2020": ("Appointment_asylum_2020", 1, "Appointment"),
+                "Appointment_asylum_2019": ("Appointment_asylum_2019", 1, "Appointment"),
+                "Appointment_asylum_2021":("Appointment_asylum_2021", 1, "Appointment"),
+                "Approved_receipts": ("Approved_cases_asylum", 1, "Approved_receipts"),
+                "Payment_receipt": ("Asylum_receipt", 1, "Payment_receipt"),
+                "Defensive_receipt_2024": ("Defensive_receipt_2024", 1, "Defensive_receipt"),
+                "Defensive_receipt_2020": ("Defensive_receipt_2020", 1, "Defensive_receipt"),
+                "Defensive_receipt_2019":("Defensive_receipt_2019", 1, "Defensive_receipt"),
+                "Application_to_asylum": ("Application_to_asylum", 1, "Application_to_asylum"),
+                "Reused": ("Reused_asylum", 1, "Reused"),
+                "Reused_2018":("Reused_2018", 1, "Reused"),
+                "Reject": ("Reject", 1, "Reject"),
+                "Reject_2020": ("Reject_2020", 1, "Reject"),
+                "Receipt": ("Receipt", 1, "Receipts")
             }
         }
 
@@ -157,25 +159,25 @@ def exect_funct_optimized(doc_type, page, option, processed_path, json_type, sav
         config = doc_config.get(option, {}).get(doc_type)
         if not config:
             print(f"❌ Tipo de documento no reconocido: {doc_type}")
-            result = {"name": f"{uuid.uuid4()}", "alien_number": f"{random.randint(1,10000)}", "doc_type": f"{uuid.uuid4()}", "folder_name":json_type}
+            result = {"name": f"{uuid.uuid4()}", "alien_number": f"{random.randint(1,10000)}", "doc_type": f"{uuid.uuid4()}", "folder_name":option}
             return save_and_ocr_optimized(result, processed_path, option, save_pdf)
 
-        type_name, json_type, sheets_quantity, kind_of_doc = config
+        type_name, sheets_quantity, kind_of_doc = config
 
         # Búsqueda optimizada
-        name = search_in_doc_optimized(page, type_name, "name", json_type)
-        alien_number = search_in_doc_optimized(page, type_name, "a_number", json_type)
+        name = search_in_doc_optimized(page, type_name, "name", option)
+        alien_number = search_in_doc_optimized(page, type_name, "a_number", option)
 
         if not name:
-            print(f"❌ No se encontraron datos en el documento: {name}")
+            print(f"❌ The system can't find Name: {name}")
             name = f"{uuid.uuid4()}" 
 
         if not alien_number: 
-            print(f"❌ No se encontraron datos en el documento: {alien_number}")
+            print(f"❌ The system can't find Alien Number: {alien_number}")
             alien_number = f"A{random.randint(1, 10000)}"
 
 
-        result = {"name": name, "alien_number": alien_number, "doc_type": kind_of_doc, "folder_name":json_type}
+        result = {"name": name, "alien_number": alien_number, "doc_type": kind_of_doc, "folder_name":option}
         return save_and_ocr_optimized(result, processed_path, option, save_pdf)
 
     except Exception as e:
@@ -203,26 +205,26 @@ def process_single_page(page, option, processed_path, json_type):
         
         classify_func = classification_functions.get(option)
         if not classify_func:
-            print(f"⚠️ Tipo de carpeta no reconocido: {option}")
+            print(f"⚠️ Folder type did't found: {option}")
             return None
         
         doc_type = classify_func()
         
         if not doc_type:
-            print(f"⚠️ No se pudo clasificar el documento en la carpeta {option}")
+            print(f"⚠️ The system can't index document in the {option} folder")
             return exect_funct_optimized("Error", page, option, processed_path, json_type, pdf_save)
 
         return exect_funct_optimized(doc_type, page, option, processed_path, json_type, pdf_save)
         
     except Exception as e:
-        print(f"❌ Error procesando página: {e}")
+        print(f"❌ Error to page process: {e}")
         traceback.print_exc()
         return None
 
 def process_pages_parallel(pages, option, processed_path, json_type):
     """Procesa páginas en paralelo, cada una con su propio PDF"""
     results = []
-    with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+    with ThreadPoolExecutor(max_workers=os.cpu_count() - 2) as executor:
         futures = [executor.submit(
             process_single_page, 
             page, option, processed_path, json_type
@@ -241,7 +243,7 @@ def optimized_indexing(pdf: str, option: str, input_path: str, processed_path: s
         
         pages = convert_from_path(
             pdf_path,
-            thread_count=4,
+            thread_count=6,
             dpi=200,
             grayscale=True,
             poppler_path=r'C:\Users\simon\Downloads\Release-24.08.0-0\poppler-24.08.0\Library\bin'

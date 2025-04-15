@@ -41,7 +41,7 @@ class PDFMonitorGUI(QMainWindow):
         # Timer para actualizar la tabla periódicamente
         self.update_timer = QTimer(self)
         self.update_timer.timeout.connect(self.update_pdf_list)
-        self.update_timer.start(5000)  # Actualizar cada 5 segundos
+        self.update_timer.start(3000)  # Actualizar cada 5 segundos
         
     def init_ui(self):
         # Widget central
@@ -59,7 +59,7 @@ class PDFMonitorGUI(QMainWindow):
         layout.addWidget(title_label)
         
         # Instrucciones
-        instructions = QLabel("Haz doble click en un documento para procesarlo")
+        instructions = QLabel("Double click on a document to process it")
         instructions.setAlignment(Qt.AlignCenter)
         layout.addWidget(instructions)
         
@@ -124,7 +124,7 @@ class PDFMonitorGUI(QMainWindow):
                 self.show_json_table(json_data)
                 
                 # Mover el archivo a la carpeta Done
-                smbclient.rename(pdf_info['full_path'],Path(pdf_info['folder_path']) / "Done" / f"{uuid.uuid4()}.pdf")
+                # smbclient.rename(pdf_info['full_path'],Path(pdf_info['folder_path']) / "Done" / f"{uuid.uuid4()}.pdf")
                 
                 # Actualizar la lista
                 self.pdf_data.pop(selected_row)
@@ -141,7 +141,7 @@ class PDFMonitorGUI(QMainWindow):
         #     if 'pdf' not in item:
         #         item['pdf'] = pdf_path
         
-        # Crear y mostrar la ventana de resultados
+        # Crear y mostrar la ventana de resultados para luego realizar el QA
         self.json_window = Json_table(json_data)
         self.json_window.setWindowModality(Qt.WindowModal)  # Modal respecto a la ventana principal
         self.json_window.show()
@@ -190,7 +190,7 @@ class PDFMonitorGUI(QMainWindow):
                                 self.pdf_data.append(pdf_info)
                                 self.update_pdf_list()
                                 
-                time.sleep(12)
+                time.sleep(10)
             except Exception as e:
                 print(f"Error en monitor_folder: {e}")
                 time.sleep(30)

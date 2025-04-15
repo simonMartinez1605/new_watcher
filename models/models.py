@@ -30,14 +30,8 @@ class Model():
 
                 if key_word == word:
 
-                    # print(f"X: {region_x - x}")
-                    # print(f"Y: {region_y - y}")
-
                     region_x = x + region_x
                     region_y = y + region_y
-
-                    # print(region_x, region_y, x, y)
-
 
                     # Recortar la región específica
                     region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
@@ -53,7 +47,8 @@ class Model():
                     # Dividir por líneas y eliminar espacios extra
                     text = [line.strip() for line in text.split("\n") if line.strip()]
 
-                    # print(f"Text extract: {"".join(text)}")
+                    # print(f"Text extract: {"".join(text)}", f"X: {region_x - x}", f"Y: {region_y - y}")
+                    # print(f"Text extrac: {"".join(text)}")
 
                     # Filtrar posibles errores (puedes mejorar este criterio)
                     # if text:
@@ -211,7 +206,6 @@ class Model():
             for i, word in enumerate(self.data_ocr['text']): 
                 x,y,w,h = self.data_ocr['left'][i], self.data_ocr['top'][i], self.data_ocr['width'][i], self.data_ocr['height'][i]
 
-
                 match word: 
 
                     case "Type": 
@@ -252,6 +246,8 @@ class Model():
                         status = pytesseract.image_to_string(region)
                         status = status.replace("\n", "").replace("/","")
 
+                        # print(status)
+
                         if "Asylu" in status or "Asvlu" in status:
                             
                             region_x = x + 340
@@ -275,22 +271,54 @@ class Model():
                                 status = pytesseract.image_to_string(region)
                                 status = status.replace("\n", "").replace("/","")
                                 
+                                # print(status)
+                                
                                 if "Receipt" in status: 
                                     result.append("Receipt")
 
                     case "REMOVAL":
-
                         region_x = x - 380
                         region_y = y - 50
                         region_w = 248
-                        region_h = 134
+                        region_h = 164
                         region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
                         status = pytesseract.image_to_string(region)
                         status = status.replace("\n", "").replace("/","")
 
                         if "Applicants" in status: 
                             result.append("Reused")
-                    
+                        else:  
+                            region_x = x - 3
+                            region_y = y - 62
+                            region_w = 150
+                            region_h = 65
+                            region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
+                            status = pytesseract.image_to_string(region)
+                            status = status.replace("\n", "").replace("/","")
+
+                            if "589" in status or "CASE" in status:
+                                region_x = x + 1215.5
+                                region_y = y - 113
+                                region_w = 290
+                                region_h = 80
+                                region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
+                                status = pytesseract.image_to_string(region)
+                                status = status.replace("\n", "").replace("/","")
+
+                                if "2018" in status or "HVOSPOLS" in status:
+                                    result.append("Reused_2018")
+                                else:
+                                    region_x = x + 1220
+                                    region_y = y - 103
+                                    region_w = 290
+                                    region_h = 85
+                                    region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
+                                    status = pytesseract.image_to_string(region)
+                                    status = status.replace("\n", "").replace("/","")
+
+                                    if "2018" in status or "618" in status or "120" in status: 
+                                        result.append("Reused_2018")
+          
                     case "Defensive": 
 
                         region_x = x - 375
@@ -381,13 +409,15 @@ class Model():
                             status = pytesseract.image_to_string(region)
                             status = status.replace("/","").replace("\n", "")
 
-                            # print(status)
-
-                            if "2020" in status: 
-                                result.append("Appointment_asylum_2020")
-                            elif "2024" in status or "2025" in status: 
+                            if "2024" in status or "2025" in status: 
                                 result.append("Appointment")
+                            elif "2020" in status: 
+                                result.append("Appointment_asylum_2020")
+                            elif "2021" in status: 
+                                result.append("Appointment_asylum_2021")
                             elif "2019" in status:
+                                result.append("Appointment_asylum_2019")
+                            elif "2018" in status or "201" in status: 
                                 result.append("Appointment_asylum_2019")
                             else: 
                                 region_x = x + 852
@@ -400,12 +430,12 @@ class Model():
 
                                 status = re.sub(r'\D', "", status)
 
-                                # print(status)
-
                                 if "019" in status or "219" in status or "2059" in status: 
                                     result.append("Appointment_asylum_2019")
                                 elif "2020" in status:
                                     result.append("Appointment_asylum_2020")
+                                elif "2021" in status: 
+                                    result.append({"Appointment_asylum_2021"})
 
             # print(result)
             if result == []: 

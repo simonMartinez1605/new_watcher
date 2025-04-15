@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QTableWidget, QAbstractItemView, 
-                            QLabel, QPushButton, QTableWidgetItem, QVBoxLayout)
+                            QLabel, QPushButton, QTableWidgetItem, QVBoxLayout, QProgressDialog, QApplication, QMessageBox)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from pdf2image import convert_from_path
@@ -67,8 +67,9 @@ class Json_table(QWidget):
         self.load_data(self.data)
         self.table.itemChanged.connect(self.update_json_from_table)
 
-    def save_and_ocr(self): 
-            pass
+        self.progress_label = QLabel(self)
+        self.progress_label.setAlignment(Qt.AlignCenter)
+        self.progress_label.hide()
 
     def load_data(self, data_list):
         if not data_list:
@@ -126,7 +127,7 @@ class Json_table(QWidget):
                 pass
 
         self.data[row][key] = new_value
-        print(f"Actualizado: fila {row}, columna '{key}' => {new_value}")
+        print(f"Update: Row {row + 1}, Column '{key}' => {new_value}")
 
     def open_pdf(self, row):
         pdf_path = self.data[row]["pdf"]
@@ -138,7 +139,7 @@ class Json_table(QWidget):
             else:
                 subprocess.run(["xdg-open", pdf_path])
         except Exception as e:
-            print(f"No se pudo abrir el PDF: {e}")
+            print(f"The system can't open the file: {e}")
 
     def show_pdf_preview(self):
         """Carga y muestra el PDF con tamaño inicial adaptado"""
@@ -150,7 +151,7 @@ class Json_table(QWidget):
         pdf_path = self.data[row]["pdf"]
 
         if not os.path.exists(pdf_path):
-            self.preview_label.setText("Archivo PDF no encontrado.")
+            self.preview_label.setText("PDF document don't found")
             return
 
         try:
@@ -175,7 +176,7 @@ class Json_table(QWidget):
                 self.scale_on_first_load()
                 
         except Exception as e:
-            self.preview_label.setText(f"Error al cargar vista previa:\n{str(e)}")
+            self.preview_label.setText(f"Error to upload preview:\n{str(e)}")
 
     def scale_on_first_load(self):
         """Escala la imagen solo al cargar inicialmente"""
@@ -202,8 +203,30 @@ class Json_table(QWidget):
             self.preview_label.setPixmap(self.current_pixmap)
 
     def upload(self):
-        data_set = self.data 
+        try: 
+            progress = QProgressDialog("Upload data to sharepoint...", "Cancel", 0, len(self.data), self)
+            progress.setWindowModality(Qt.WindowModal)
+            progress.show()
 
-        for data in data_set: 
-            ocr(data['pdf'])
-            sharepoint(data['pdf'], f"{data['name']}-{data['doc_type']}.pdf", data['alien_number'], data['folder_name'], data['doc_type'])
+            for i, data in enumerate(self.data, 1):
+                if progress.wasCanceled(): 
+                    break
+
+                progress.setValue(i)
+                progress.setLabelText(f"Procesing {data['name']}...")
+                QApplication.processEvents()
+
+                try: 
+
+                    ocr(data['pdf'])
+                    sharepoint(data['pdf'], f"{data['name']}-{data['doc_type']}.pdf", data['alien_number'], data['folder_name'], data['doc_type'])
+                except Exception as e: 
+                    print(f"Error to process data: {e}")
+
+            progress.close()
+            self.close()
+
+        except Exception as e:
+            print(f"Error to upload documents: {e}")
+            QMessageBox.critical(self, "Error", f"Upload documents: \n{str(e)}")
+

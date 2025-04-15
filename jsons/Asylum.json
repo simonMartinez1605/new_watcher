@@ -81,6 +81,26 @@
         "key_word":"WITHHOLDING"
     },
     {
+        "pdf": "Appointment_asylum_2021",
+        "name": [
+            {
+                "x": -409,
+                "y": 112,
+                "width": 546,
+                "height": 52
+            }
+        ], 
+        "a_number":[
+            {
+                "x": 605,
+                "y": -9,
+                "width": 199,
+                "height": 48
+            }
+        ], 
+        "key_word":"WITHHOLDING"
+    },
+    {
         "pdf": "Appointment_asylum_2019",
             "name": [
             {
@@ -201,6 +221,26 @@
         ], 
         "key_word":"REMOVAL"
     }, 
+    {
+        "pdf": "Reused_2018",
+        "name": [
+            {
+                "x": 45,
+                "y": 102,
+                "width": 617,
+                "height": 65
+            }
+        ], 
+        "a_number":[
+            {
+                "x": 1035,
+                "y": -37,
+                "width": 161,
+                "height": 57
+            }
+        ], 
+        "key_word":"REMOVAL"
+    },
     {
         "pdf": "Reject",
         "name": [
