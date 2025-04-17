@@ -1,14 +1,14 @@
-from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QTableWidget, QAbstractItemView, 
-                            QLabel, QPushButton, QTableWidgetItem, QVBoxLayout, QProgressDialog, QApplication, QMessageBox)
+import os
+import sys
+import subprocess
+from io import BytesIO
 from PyQt5.QtCore import Qt
+from services.ocr import ocr
 from PyQt5.QtGui import QPixmap
 from pdf2image import convert_from_path
 from services.conection import sharepoint
-from services.ocr import ocr
-from io import BytesIO
-import subprocess
-import os
-import sys
+from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QTableWidget, QAbstractItemView, 
+                            QLabel, QPushButton, QTableWidgetItem, QVBoxLayout, QProgressDialog, QApplication, QMessageBox)
 
 class Json_table(QWidget):
     def __init__(self, data_list):
@@ -229,4 +229,3 @@ class Json_table(QWidget):
         except Exception as e:
             print(f"Error to upload documents: {e}")
             QMessageBox.critical(self, "Error", f"Upload documents: \n{str(e)}")
-

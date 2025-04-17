@@ -1,16 +1,15 @@
-from dotenv import load_dotenv
-from rich.console import Console
-from pathlib import Path
-import smbclient
 import os
 import time
-import uuid
 import threading
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget, QHeaderView, QLabel, QPushButton)
-from PyQt5.QtCore import Qt, QTimer
+import smbclient
+from pathlib import Path
 from PyQt5.QtGui import QFont
+from dotenv import load_dotenv
+from rich.console import Console
+from PyQt5.QtCore import Qt, QTimer
 from QA.quality_assurance import Json_table
 from services.index import optimized_indexing as indexing
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget, QHeaderView, QLabel, QPushButton)
 
 load_dotenv()
 

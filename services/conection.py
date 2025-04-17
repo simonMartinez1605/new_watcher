@@ -1,10 +1,10 @@
+import os
+import json
+import requests
 from shareplum import Site
+from dotenv import load_dotenv
 from shareplum import Office365
 from shareplum.site import Version
-import requests
-import json
-import os
-from dotenv import load_dotenv
 
 load_dotenv()
 

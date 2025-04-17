@@ -1,20 +1,20 @@
 import os
+import uuid
 import json
 import shutil
-import uuid
-import traceback
-import numpy as np
 import random
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from io import BytesIO
-from pdf2image import convert_from_path
-from PyPDF2 import PdfWriter
-from PIL import Image, ImageFilter
+import traceback
 import pytesseract
+import numpy as np
+from io import BytesIO
+from PyPDF2 import PdfWriter
 from dotenv import load_dotenv
-from services.deskewing import deskew_image
 from models.models import Model
+from PIL import Image, ImageFilter
+from pdf2image import convert_from_path
+from services.deskewing import deskew_image
 from errors.errors import regex_name, regex_alien_number
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Cargar variables de entorno
 load_dotenv()

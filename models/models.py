@@ -1,5 +1,6 @@
 import pytesseract
 import re
+import json
 
 pattern_alien_number = r"^A\d{9}$"
 
@@ -13,7 +14,28 @@ def regex_name(text):
 
     return re.sub(regex, "", text)
 
+_JSON_CACHE = {}
 
+def load_json_cached(file_path: str) -> dict:
+    """Carga JSON con caché para evitar lecturas repetidas de disco"""
+    if file_path not in _JSON_CACHE:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            _JSON_CACHE[file_path] = json.load(f)
+    return _JSON_CACHE[file_path]
+
+def search_in_coords(coord_list : list, coord_x : int , coord_y: int, item) -> str: 
+    for coord in coord_list: 
+        x = coord_x + coord['x']
+        y = coord_y + coord['y']
+        w = coord['w']
+        h = coord['h']
+
+        region = item.crop((x, y, x + w, y + h))
+        status = pytesseract.image_to_string(region)
+        status = status.replace("\n", "").replace("/", "")
+        return status
+    
+    
 #MODULO A MEJORAR
 class Model():
     def __init__(self, data_ocr, item):
@@ -61,386 +83,96 @@ class Model():
 
     def find_receipts(self) -> str:
         try:
+            json_path = f"jsons/search_42BReceipts.json"
+            doc_definitions = load_json_cached(json_path)  # Es una lista
+            results = []
 
-            result = []
+            for doc_config in doc_definitions:  # Iteramos sobre cada objeto del JSON
+                def buscar_status(coord_x, coord_y) -> str | None:
+                    # Buscar en coordenadas normales
+                    status = search_in_coords(doc_config['second_coords'], coord_x, coord_y, self.item)
+                    value = extraer_valor(status, doc_config.get("second_key_words", {}))
+                    if value:
+                        return value
 
-            for i, word in enumerate(self.data_ocr['text']):
-                x,y,w,h = self.data_ocr['left'][i], self.data_ocr['top'][i], self.data_ocr['width'][i], self.data_ocr['height'][i]
-                
-                match word: 
-                    #42B
-                    case "Priority":
+                    # Luego buscar en coordenadas de excepción
+                    status = search_in_coords(doc_config['except_coords'], coord_x, coord_y, self.item)
+                    return extraer_valor(status, doc_config.get("except_key_words", {}))
 
-                        region_x = x
-                        region_y = y
-                        region_w = 140
-                        region_h = 140
+                def extraer_valor(texto: str, key_words_dict: dict) -> str | None:
+                    for key, value in key_words_dict.items():
+                        if key in texto:
+                            return value
+                    return None
 
-                        region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
-                        status = pytesseract.image_to_string(region)
-                        status = status.replace("\n", "").replace("/", "")
+                for i, word in enumerate(self.data_ocr['text']):
+                    if word != doc_config['anchor']:
+                        continue
 
-                        if "Page2" in status: 
-                            result.append("Receipts")
-                        else: 
-                            region_x = x - 1
-                            region_h = 141
-                            region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h)) 
-                            status = pytesseract.image_to_string(region)
-                            status = status.replace("/","").replace("\n", "")
+                    coord_x = self.data_ocr['left'][i]
+                    coord_y = self.data_ocr['top'][i]
+                    search_word = search_in_coords(doc_config['first_coords'], coord_x, coord_y, self.item)
 
-                            if "Page2" in status: 
-                                result.append("Receipts" )
-                            
-                    case "APPLICANT":
-                
-                        region_x = x - 50
-                        region_y = y - 80
-                        region_w = 200
-                        region_h = 100
+                    for key_word in doc_config['first_key_word']:
+                        if key_word not in search_word:
+                            continue
+                    
 
-                        region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
-                        status = pytesseract.image_to_string(region)
-                        status = status.replace("\n", "").replace("/","")
+                    resultado = buscar_status(coord_x, coord_y)
+                    if resultado:
+                        results.append(resultado)
+                        break  # Si ya encontró uno, no necesita seguir con las demás definiciones
 
-                        if "EOIR" in status:
-                            result.append("Payment")
-                        else:
-                            region_x = x - 890
-                            region_y = y - 200
-                            region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h)) 
-                            status = pytesseract.image_to_string(region)
-                            status = status.replace("/","").replace("\n", "")
-
-                            if "EOIR" in status: 
-                                result.append("Payment") 
-                            else: 
-                                region_x = x + 100
-                                region_y = y - 100
-                                region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h)) 
-                                status = pytesseract.image_to_string(region)
-                                status = status.replace("/","").replace("\n", "")
-
-                                if "EOIR" in status:
-                                    result.append("Payment")
-                            
-                    case "ADJUST":
-                        region_x = x + 380
-                        region_y = y + 6
-                        region_w = 110
-                        region_h = 60
-
-                        region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
-                        status = pytesseract.image_to_string(region)
-                        status = status.replace("\n", "").replace("/","")
-
-                        status = f"{status}"
-                        # print(status)
-
-                        if "I485" in status or "1485" in status or "85" in status or "1765" in status or "765" in status or "EOIR42" in status or "89" in status:
-                            result.append("Appointment")
-                        else:
-                            region_x = x + 20
-                            region_y = y - 170
-                            region_w = 350
-                            region_h = 100
-                            region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
-                            status = pytesseract.image_to_string(region)
-                            status = status.replace("/","").replace("\n", "")
-
-                            status = f"{status}"
-                            print(status)
-
-                            if "Appointment" in status:
-                                result.append("Appointment")
-                            
-                            if "Applicants" in status:
-                                result.append("Reused")
-                
-                    case "Applicants":
-                        region_x = x + 150
-                        region_y = y + 20
-                        region_w = 160
-                        region_h = 120
-
-                        region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
-                        status = pytesseract.image_to_string(region)
-                        status = status.replace("\n", "").replace("/","")
-
-                        if "I485" in status or "1485" in status or "485" in status or "1765" in status or "765" in status or "589" in status:
-                            result.append("Reused")
-                        else:
-                            region_x = x - 135
-                            region_y = y + 45
-                            region_w = 100
-                            region_h = 120
-                            region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h)) 
-                            status = pytesseract.image_to_string(region)
-                            status = status.replace("/","").replace("\n", "")
-
-                            if "I485" in status or "1485" in status or "485" in status or "1765" in status or "765" in status or "589" in status: 
-                                result.append("Reused") 
-                            
-                    case "Employment": 
-                        region_x = x - 95
-                        region_y = y - 8
-                        region_w = 96
-                        region_h = 33
-
-                        region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
-                        status = pytesseract.image_to_string(region)
-                        status = status.replace("\n", "").replace("/", "")
-
-                        if "765" in status or "766": 
-                            result.append("Payment")
-
-            return result[0]
+            return results[0] if results else None
 
         except Exception as e:
-            print(f"Error in search model: {e}")
+            print(f"Error in asylum search module: {e}")
             return False
-        
-    def find_receipts_asylum(self) -> str: 
+
+    def find_receipts_asylum(self) -> str:
         try:
-            result = []
-            for i, word in enumerate(self.data_ocr['text']): 
-                x,y,w,h = self.data_ocr['left'][i], self.data_ocr['top'][i], self.data_ocr['width'][i], self.data_ocr['height'][i]
+            json_path = "jsons/search_Asylum.json"
+            doc_definitions = load_json_cached(json_path)  # Es una lista
+            results = []
 
-                match word: 
+            for doc_config in doc_definitions:  # Iteramos sobre cada objeto del JSON
+                def buscar_status(coord_x, coord_y) -> str | None:
+                    # Buscar en coordenadas normales
+                    status = search_in_coords(doc_config['second_coords'], coord_x, coord_y, self.item)
+                    value = extraer_valor(status, doc_config.get("second_key_words", {}))
+                    if value:
+                        return value
 
-                    case "Type": 
-                        region_x = x - 600
-                        region_y = y - 10
-                        region_w = 280
-                        region_h = 100
+                    # Luego buscar en coordenadas de excepción
+                    status = search_in_coords(doc_config['except_coords'], coord_x, coord_y, self.item)
+                    return extraer_valor(status, doc_config.get("except_key_words", {}))
 
-                        region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
-                        status = pytesseract.image_to_string(region)
-                        status = status.replace("\n", "").replace("/","")
+                def extraer_valor(texto: str, key_words_dict: dict) -> str | None:
+                    for key, value in key_words_dict.items():
+                        if key in texto:
+                            return value
+                    return None
 
-                        # print(status)
+                for i, word in enumerate(self.data_ocr['text']):
+                    if word != doc_config['anchor']:
+                        continue
 
-                        if "Reject" in status: 
-                            result.append("Reject_2020")
+                    coord_x = self.data_ocr['left'][i]
+                    coord_y = self.data_ocr['top'][i]
+                    search_word = search_in_coords(doc_config['first_coords'], coord_x, coord_y, self.item)
+
+                    for key_word in doc_config['first_key_word']:
+                        if key_word not in search_word:
+                            continue
                     
-                    case "Reference": 
-                        region_x = x - 200
-                        region_y = y 
-                        region_w = 250
-                        region_h = 50
 
-                        region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
-                        status = pytesseract.image_to_string(region)
-                        status = status.replace("\n", "").replace("/","")
+                    resultado = buscar_status(coord_x, coord_y)
+                    if resultado:
+                        results.append(resultado)
+                        break  # Si ya encontró uno, no necesita seguir con las demás definiciones
 
-                        if "Reject" in status: 
-                            result.append("Reject")
-                        
-                    case "Removal":
-                        region_x = x - 390 
-                        region_y = y - 14
-                        region_w = 270
-                        region_h = 95
+            return results[0] if results else None
 
-                        region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
-                        status = pytesseract.image_to_string(region)
-                        status = status.replace("\n", "").replace("/","")
-
-                        # print(status)
-
-                        if "Asylu" in status or "Asvlu" in status:
-                            
-                            region_x = x + 340
-                            region_y = y + 133
-                            region_w = 341
-                            region_h = 46
-
-                            region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
-                            status = pytesseract.image_to_string(region)
-                            status = status.replace("\n", "").replace("/","")
-                            
-                            if "PAYMENT" in status: 
-                                result.append("Payment_receipt")
-                            else: 
-                                region_x = 1010
-                                region_y = 451
-                                region_w = 397
-                                region_h = 75
-
-                                region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
-                                status = pytesseract.image_to_string(region)
-                                status = status.replace("\n", "").replace("/","")
-                                
-                                # print(status)
-                                
-                                if "Receipt" in status: 
-                                    result.append("Receipt")
-
-                    case "REMOVAL":
-                        region_x = x - 380
-                        region_y = y - 50
-                        region_w = 248
-                        region_h = 164
-                        region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
-                        status = pytesseract.image_to_string(region)
-                        status = status.replace("\n", "").replace("/","")
-
-                        if "Applicants" in status: 
-                            result.append("Reused")
-                        else:  
-                            region_x = x - 3
-                            region_y = y - 62
-                            region_w = 150
-                            region_h = 65
-                            region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
-                            status = pytesseract.image_to_string(region)
-                            status = status.replace("\n", "").replace("/","")
-
-                            if "589" in status or "CASE" in status:
-                                region_x = x + 1215.5
-                                region_y = y - 113
-                                region_w = 290
-                                region_h = 80
-                                region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
-                                status = pytesseract.image_to_string(region)
-                                status = status.replace("\n", "").replace("/","")
-
-                                if "2018" in status or "HVOSPOLS" in status:
-                                    result.append("Reused_2018")
-                                else:
-                                    region_x = x + 1220
-                                    region_y = y - 103
-                                    region_w = 290
-                                    region_h = 85
-                                    region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
-                                    status = pytesseract.image_to_string(region)
-                                    status = status.replace("\n", "").replace("/","")
-
-                                    if "2018" in status or "618" in status or "120" in status: 
-                                        result.append("Reused_2018")
-          
-                    case "Defensive": 
-
-                        region_x = x - 375
-                        region_y = y - 228
-                        region_w = 233
-                        region_h = 73
-                        region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
-                        status = pytesseract.image_to_string(region)
-                        status = status.replace("\n", "").replace("/","")
-
-                        if "589" in status: 
-                            result.append("Defensive_receipt_2020")
-                        else: 
-                            region_x = x - 690
-                            region_y = y - 260
-                            region_w = 825
-                            region_h = 81
-                            region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
-                            status = pytesseract.image_to_string(region)
-                            status = status.replace("\n", "").replace("/","")
-                            
-                            if "89" in status: 
-                                result.append("Defensive_receipt_2019")
-                            else: 
-                                region_x = x - 440
-                                region_y = y - 190
-                                region_w = 370
-                                region_h = 80
-                                region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
-                                status = pytesseract.image_to_string(region)
-                                status = status.replace("\n", "").replace("/","")
-                                
-                                if "589" in status: 
-                                    region_x = x - 1030
-                                    region_y = y - 72
-                                    region_w = 133
-                                    region_h = 60
-                                    region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
-                                    status = pytesseract.image_to_string(region)
-                                    status = status.replace("\n", "").replace("/","")
-
-                                    if "2024" in status: 
-                                        result.append("Defensive_receipt_2024")
-                    
-                    case "Applican":
-
-                        region_x = x + 3
-                        region_y = y - 35
-                        region_w = 440
-                        region_h = 50
-
-                        region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
-                        status = pytesseract.image_to_string(region)
-                        status = status.replace("\n", "").replace("/", "")
-
-                        # print(status)
-
-                        if "765" in status or "APPLICATION" in status:
-
-                            region_x = x + 524
-                            region_y = y + 156
-                            region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
-                            status = pytesseract.image_to_string(region)
-                            status = status.replace("\n", "").replace("/", "")
-
-                            # print(status)
-
-                            if "Approval" in status:
-                                result.append("Approved_receipts")
-
-                    case "WITHHOLDING":
-                        region_x = x - 405
-                        region_y = y - 120
-                        region_w = 280
-                        region_h = 80
-                        region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
-                        status = pytesseract.image_to_string(region)
-                        status = status.replace("/","").replace("\n", "")
-
-
-                        if "Appointment" in status: 
-                            
-                            region_x = x + 794
-                            region_y = y - 83
-                            region_w = 250
-                            region_h = 180
-                            region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
-                            status = pytesseract.image_to_string(region)
-                            status = status.replace("/","").replace("\n", "")
-
-                            if "2024" in status or "2025" in status: 
-                                result.append("Appointment")
-                            elif "2020" in status: 
-                                result.append("Appointment_asylum_2020")
-                            elif "2021" in status: 
-                                result.append("Appointment_asylum_2021")
-                            elif "2019" in status:
-                                result.append("Appointment_asylum_2019")
-                            elif "2018" in status or "201" in status: 
-                                result.append("Appointment_asylum_2019")
-                            else: 
-                                region_x = x + 852
-                                region_y = y - 94.5
-                                region_w = 350
-                                region_h = 250
-                                region = self.item.crop((region_x, region_y, region_x + region_w, region_y + region_h))
-                                status = pytesseract.image_to_string(region)
-                                status = status.replace("/","").replace("\n", "")
-
-                                status = re.sub(r'\D', "", status)
-
-                                if "019" in status or "219" in status or "2059" in status: 
-                                    result.append("Appointment_asylum_2019")
-                                elif "2020" in status:
-                                    result.append("Appointment_asylum_2020")
-                                elif "2021" in status: 
-                                    result.append({"Appointment_asylum_2021"})
-
-            # print(result)
-            if result == []: 
-                return None 
-            return result[0]
-        except Exception as e: 
+        except Exception as e:
             print(f"Error in asylum search module: {e}")
             return False

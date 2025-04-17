@@ -1,0 +1,266 @@
+
+[
+    {   
+        "doc_type": "Appointment",
+        "anchor":"WITHHOLDING", 
+        "first_coords":[
+            {
+                "x": -405,
+                "y": -120,
+                "w": 280,
+                "h": 80
+            }
+        ],
+        "first_key_word":["Appointment"],
+        "second_coords":[
+            {
+                "x": 794,
+                "y": -83,
+                "w": 250,
+                "h": 180
+            }
+        ], 
+        "second_key_words":{
+            "2025": "Appointment", 
+            "2024": "Appointment", 
+            "2021": "Appointment_asylum_2021", 
+            "2020": "Appointment_asylum_2020",
+            "2019": "Appointment_asylum_2019",
+            "2018": "Appointment_asylum_2019"
+        }, 
+        "except_coords":[
+            {
+                "x": 852,
+                "y": -94.5,
+                "w": 350,
+                "h": 250
+            }
+        ], 
+        "except_key_words":{
+            "2018": "Appointment_asylum_2019",
+            "201": "Appointment_asylum_2019",
+            "2019": "Appointment_asylum_2019", 
+            "059": "Appointment_asylum_2019"
+        }
+    }, 
+    {   
+        "doc_type": "Approved_receipts",
+        "anchor":"Applican", 
+        "first_coords":[
+            {
+                "x": 3,
+                "y": -35,
+                "w": 440,
+                "h": 50
+            }
+        ],
+        "first_key_word":["APPLICATION", "765"],
+        "second_coords":[
+            {
+                "x": 524,
+                "y": 156,
+                "w": 440,
+                "h": 50
+            }
+        ], 
+        "second_key_words":{
+            "Approval": "Approved_receipts"
+        }, 
+        "except_coords":[
+            {
+                "x": 550,
+                "y": 170,
+                "w": 450,
+                "h": 70
+            }
+        ], 
+        "except_key_words":{
+            "Approval": "Approved_receipts"
+        }
+    }, 
+    {   
+        "doc_type": "Defensive_receipt",
+        "anchor":"Defensive", 
+        "first_coords":[
+            {
+                "x": -440,
+                "y": -190,
+                "w": 370,
+                "h": 80
+            }
+        ],
+        "first_key_word":["89"],
+        "second_coords":[
+            {
+                "x": -1030,
+                "y": -72,
+                "w": 133,
+                "h": 60
+            }
+        ], 
+        "second_key_words":{
+            "2024": "Defensive_receipt_2024"
+        }, 
+        "except_coords":[
+            {
+                "x": -375,
+                "y": -228,
+                "w": 233,
+                "h": 73
+            }
+        ], 
+        "except_key_words":{
+            "2024": "Defensive_receipt_2020"
+        }
+    }, 
+    {
+        "doc_type": "Reused",
+        "anchor": "REMOVAL",
+        "first_coords": [
+            {
+                "x": -380,
+                "y": -50,
+                "w": 248,
+                "h": 164
+            }
+        ],
+        "first_key_word": ["Applicants"],
+        "second_coords": [
+            {
+                "x": -3,
+                "y": -62,
+                "w": 150,
+                "h": 65
+            }
+        ],
+        "second_key_words": {
+            "589": "Reused",
+            "CASE": "Reused"
+        },
+        "except_coords": [
+            {
+                "x": 1215.5,
+                "y": -113,
+                "w": 290,
+                "h": 80
+            },
+            {
+                "x": 1220,
+                "y": -103,
+                "w": 290,
+                "h": 85
+            }
+        ],
+        "except_key_words": {
+            "2018": "Reused_2018",
+            "HVOSPOLS": "Reused_2018",
+            "618": "Reused_2018",
+            "120": "Reused_2018"
+        }
+    }, 
+    {
+        "doc_type": "Reject",
+        "anchor": "Reference",
+        "first_coords": [
+            {
+                "x": -200,
+                "y": 0,
+                "w": 250,
+                "h": 50
+            }
+        ],
+        "first_key_word": ["Reject"],
+        "second_coords": [
+            {
+                "x": -200,
+                "y": 0,
+                "w": 250,
+                "h": 50
+            }
+        ],
+        "second_key_words": {
+            "Reject": "Reject"
+        },
+        "except_coords": [
+            {
+                "x": -600,
+                "y": -10,
+                "w": 290,
+                "h": 100
+            }
+        ],
+        "except_key_words": {
+            "Reject": "Reject"
+        }
+    }, 
+    {
+        "doc_type": "Reject_2020",
+        "anchor": "Type",
+        "first_coords": [
+            {
+                "x": -600,
+                "y": -10,
+                "w": 290,
+                "h": 100
+            }
+        ],
+        "first_key_word": ["Reject"],
+        "second_coords": [
+            {
+                "x": -600,
+                "y": -10,
+                "w": 290,
+                "h": 100
+            }
+        ],
+        "second_key_words": {
+            "Reject": "Reject_2020"
+        },
+        "except_coords": [
+            {
+                "x": -200,
+                "y": 0,
+                "w": 250,
+                "h": 50
+            }
+        ],
+        "except_key_words": {
+            "Reject": "Reject_2020"
+        }
+    }, 
+    {
+        "doc_type": "Payment_receipt",
+        "anchor": "Removal",
+        "first_coords": [
+            {
+                "x": 340,
+                "y": 133,
+                "w": 341,
+                "h": 46
+            }
+        ],
+        "first_key_word": ["PAYMENT"],
+        "second_coords": [
+            {
+                "x": 1010,
+                "y": 451,
+                "w": 397,
+                "h": 75
+            }
+        ],
+        "second_key_words": {
+            "Receipt": "Receipt"
+        },
+        "except_coords": [
+            {
+                "x": 340,
+                "y": 133,
+                "w": 341,
+                "h": 46
+            }
+        ],
+        "except_key_words": {
+            "PAYMENT": "Payment_receipt"
+        }
+    }
+]

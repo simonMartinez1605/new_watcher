@@ -1,0 +1,193 @@
+[
+    {
+        "doc_type": "Payment_receipt",
+        "anchor": "Employment",
+        "first_coords": [
+            {
+                "x": -95,
+                "y": -8,
+                "w": 96,
+                "h": 33
+            }
+        ],
+        "first_key_word": ["765", "766"],
+        "second_coords": [
+            {
+                "x": -95,
+                "y": -8,
+                "w": 96,
+                "h": 33
+            }
+        ],
+        "second_key_words": {
+            "765": "Payment", 
+            "766": "Payment"
+        },
+        "except_coords": [
+            {
+                "x": -95,
+                "y": -8,
+                "w": 96,
+                "h": 33
+            }
+        ],
+        "except_key_words": {
+            "765": "Payment", 
+            "766": "Payment"
+        }
+    }, 
+    {
+        "doc_type": "Reused",
+        "anchor": "Applicants",
+        "first_coords": [
+            {
+                "x": 150,
+                "y": 20,
+                "w": 160,
+                "h": 120
+            }
+        ],
+        "first_key_word": ["485", "765", "589"],
+        "second_coords": [
+            {
+                "x": 150,
+                "y": 20,
+                "w": 160,
+                "h": 120
+            }
+        ],
+        "second_key_words": {
+            "485": "Reused", 
+            "765": "Reused", 
+            "589": "Reused"
+        },
+        "except_coords": [
+            {
+                "x": -135,
+                "y": 45,
+                "w": 100,
+                "h": 120
+            }
+        ],
+        "except_key_words": {
+            "485": "Reused", 
+            "765": "Reused", 
+            "589": "Reused"
+        }
+    }, 
+    {
+        "doc_type": "Appointment",
+        "anchor": "ADJUST",
+        "first_coords": [
+            {
+                "x": 380,
+                "y": 6,
+                "w": 110,
+                "h": 60
+            }
+        ],
+        "first_key_word": ["85", "765", "EOIR42", "89"],
+        "second_coords": [
+            {
+                "x": 380,
+                "y": 6,
+                "w": 110,
+                "h": 60
+            }
+        ],
+        "second_key_words": {
+            "85": "Appointment", 
+            "765": "Appointment", 
+            "89": "Appointment", 
+            "EOIR42": "Appointment"
+        },
+        "except_coords": [
+            {
+                "x": 20,
+                "y": -170,
+                "w": 350,
+                "h": 100
+            }
+        ],
+        "except_key_words": {
+            "Appointment": "Appointment", 
+            "Applicants": "Reused"
+        }
+    }, 
+    {
+        "doc_type": "Payment_receipt",
+        "anchor": "APPLICANT",
+        "first_coords": [
+            {
+                "x": -50,
+                "y": -80,
+                "w": 200,
+                "h": 100
+            }
+        ],
+        "first_key_word": ["EOIR"],
+        "second_coords": [
+            {
+                "x": -50,
+                "y": -80,
+                "w": 200,
+                "h": 100
+            }
+        ],
+        "second_key_words": {
+            "EOIR": "Payment"
+        },
+        "except_coords": [
+            {
+                "x": 100,
+                "y": -100,
+                "w": 200,
+                "h": 100
+            }, 
+            {
+                "x": -890,
+                "y": -200,
+                "w": 200,
+                "h": 100
+            }
+        ],
+        "except_key_words": {
+            "EOIR": "Payment"
+        }
+    }, 
+    {
+        "doc_type": "Receipts",
+        "anchor": "Priority",
+        "first_coords": [
+            {
+                "x": 0,
+                "y": 0,
+                "w": 140,
+                "h": 140
+            }
+        ],
+        "first_key_word": ["Page2"],
+        "second_coords": [
+            {
+                "x": 0,
+                "y": 0,
+                "w": 140,
+                "h": 140
+            }
+        ],
+        "second_key_words": {
+            "Page2": "Receipts"
+        },
+        "except_coords": [
+            {
+                "x": -1,
+                "y": 0,
+                "w": 140,
+                "h": 141
+            }
+        ],
+        "except_key_words": {
+            "Page2": "Receipts"
+        }
+    }
+]

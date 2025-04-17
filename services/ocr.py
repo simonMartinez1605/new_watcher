@@ -1,5 +1,5 @@
-import ocrmypdf
 import os
+import ocrmypdf
 #Funcion para realizar OCR a los documentos
 def ocr(my_path : str) -> str:
     """
