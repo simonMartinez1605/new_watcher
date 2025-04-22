@@ -160,7 +160,7 @@ class Model():
                 def extraer_valor(texto: str, key_words_dict: dict) -> str | None:
                     for key, value in key_words_dict.items():
                         if key in texto:
-                            print(f"key: {key}, value: {value}, text: {texto}")
+                            # print(f"key: {key}, value: {value}, text: {texto}")
                             return value
                     return None
 
