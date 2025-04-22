@@ -7,11 +7,17 @@ from services.ocr import ocr
 from PyQt5.QtGui import QPixmap
 from pdf2image import convert_from_path
 from services.conection import sharepoint
-from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QTableWidget, QAbstractItemView, 
-                            QLabel, QPushButton, QTableWidgetItem, QVBoxLayout, QProgressDialog, QApplication, QMessageBox)
+from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QTableWidget, QAbstractItemView, QLabel, QPushButton, QTableWidgetItem, QVBoxLayout, QProgressDialog, QApplication, QMessageBox)
 
 class Json_table(QWidget):
     def __init__(self, data_list):
+        """
+        Constructor del layout para el Quality Assurance.
+
+        Se inicializa la tabla y se carga la información de los documentos PDF que se extrajeron anteriormente en el indexing.
+        Se crea un botón para exportar los datos a SharePoint.
+        
+        """
         super().__init__()
         self.setWindowTitle("Tabla con Vista Previa de PDF")
         self.resize(1600, 800)
@@ -72,6 +78,11 @@ class Json_table(QWidget):
         self.progress_label.hide()
 
     def load_data(self, data_list):
+        """
+        Funcion para cargar los datos en la tabla.
+        Se crea una tabla con los datos de los documentos PDF y se añade un botón para abrir el PDF correspondiente.
+        Se añaden los encabezados de la tabla y se ajusta el tamaño de las columnas.
+        """
         if not data_list:
             return
 
@@ -111,6 +122,7 @@ class Json_table(QWidget):
         self.table.resizeColumnsToContents()
 
     def update_json_from_table(self, item):
+        """Actualiza el JSON a partir de la tabla cuando se edita un valor"""
         row = item.row()
         column = item.column()
         key = self.headers[column]
@@ -130,6 +142,7 @@ class Json_table(QWidget):
         print(f"Update: Row {row + 1}, Column '{key}' => {new_value}")
 
     def open_pdf(self, row):
+        """Abre el PDF correspondiente a la fila seleccionada"""
         pdf_path = self.data[row]["pdf"]
         try:
             if sys.platform == "win32":
@@ -203,6 +216,7 @@ class Json_table(QWidget):
             self.preview_label.setPixmap(self.current_pixmap)
 
     def upload(self):
+        """Sube los documentos a SharePoint y aplica OCR"""
         try: 
             progress = QProgressDialog("Upload data to sharepoint...", "Cancel", 0, len(self.data), self)
             progress.setWindowModality(Qt.WindowModal)

@@ -13,7 +13,7 @@ sharepoint_url = os.getenv('SHARE_POINT_URL')
 username = os.getenv('USER_NAME')
 password =  os.getenv('PASSWORD')
 library_name = os.getenv('LIBRARY_NAME')
-list_name = os.getenv('LIST_NAME')
+list_name = os.getenv('LIST_NAME') 
 
 # Función para obtener el X-RequestDigest
 def get_request_digest(site_name, authcookie) -> str:

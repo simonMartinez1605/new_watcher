@@ -23,7 +23,7 @@
         "second_key_words":{
             "2025": "Appointment", 
             "2024": "Appointment", 
-            "2021": "Appointment_asylum_2021", 
+            "2021": "Appointment_asylum_2021",
             "2020": "Appointment_asylum_2020",
             "2019": "Appointment_asylum_2019",
             "2018": "Appointment_asylum_2019"
@@ -39,7 +39,7 @@
         "except_key_words":{
             "2018": "Appointment_asylum_2019",
             "201": "Appointment_asylum_2019",
-            "2019": "Appointment_asylum_2019", 
+            "2019": "Appointment_asylum_2019",
             "059": "Appointment_asylum_2019"
         }
     }, 
@@ -97,9 +97,13 @@
                 "w": 133,
                 "h": 60
             }
-        ], 
+        ],
         "second_key_words":{
-            "2024": "Defensive_receipt_2024"
+            "2024": "Defensive_receipt_2024", 
+            "Applicant": "Defensive_receipt_2019", 
+            "2021": "Defensive_receipt_2020",
+            "2020": "Defensive_receipt_2020",
+            "2019": "Defensive_receipt_2019"
         }, 
         "except_coords":[
             {
@@ -107,10 +111,20 @@
                 "y": -228,
                 "w": 233,
                 "h": 73
+            }, 
+            {
+                "x": -440,
+                "y": -190,
+                "w": 370,
+                "h": 80
             }
         ], 
         "except_key_words":{
-            "2024": "Defensive_receipt_2020"
+            "2024": "Defensive_receipt_2024",
+            "Applicant": "Defensive_receipt_2019", 
+            "2021": "Defensive_receipt_2020",
+            "2020": "Defensive_receipt_2020",
+            "2019": "Defensive_receipt_2019"
         }
     }, 
     {

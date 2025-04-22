@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-from pdf2image import convert_from_path
 
 def deskew_image(image):
     """Corrige la inclinación del texto en una imagen."""

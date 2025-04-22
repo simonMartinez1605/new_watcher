@@ -10,6 +10,7 @@ def ocr(my_path : str) -> str:
 
     my_path: str 
         Recibe el path del documento al que se le desea aplicar OCR, a la vez lo reemplaza y corrigue los defectos de escaneo que tengan
+        Para optimizar el proceso, se utiliza la cantidad de nucleos del CPU disponibles para realizar el OCR en paralelo.
     
     """
     try:
