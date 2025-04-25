@@ -8,15 +8,14 @@ from shareplum.site import Version
 
 load_dotenv()
 
-# Variables de entorno
 sharepoint_url = os.getenv('SHARE_POINT_URL')
 username = os.getenv('USER_NAME')
 password =  os.getenv('PASSWORD')
 library_name = os.getenv('LIBRARY_NAME')
 list_name = os.getenv('LIST_NAME') 
 
-# Función para obtener el X-RequestDigest
 def get_request_digest(site_name, authcookie) -> str:
+    """Función para obtener el X-RequestDigest"""
     url = f"{sharepoint_url}/sites/{site_name}/_api/contextinfo"
     headers = {
         "Accept": "application/json;odata=verbose",
@@ -30,8 +29,8 @@ def get_request_digest(site_name, authcookie) -> str:
     except requests.exceptions.HTTPError as http_err:
         print(f"HTTP error occurred: {http_err}")
     
-# Función para obtener el tipo de entidad de una lista de SharePoint
 def get_list_item_type(list_name, site_name,authcookie)-> str:
+    """Función para obtener el tipo de entidad de una lista de SharePoint"""
     url = f"{sharepoint_url}/sites/{site_name}/_api/web/lists/getbytitle('{list_name}')"
     headers = {
         "Accept": "application/json;odata=verbose",
@@ -45,7 +44,6 @@ def get_list_item_type(list_name, site_name,authcookie)-> str:
     except requests.exceptions.HTTPError as http_err:
         print(f"HTTP error occurred: {http_err}")
 
-# Función para obtener el ID de un archivo recién subido
 def get_file_id(list_name, file_name, site_name,authcookie) -> str:
     """
     Obtiene el ID del archivo recién subido.
@@ -76,9 +74,8 @@ def get_file_id(list_name, file_name, site_name,authcookie) -> str:
     except requests.exceptions.HTTPError as http_err:
         print(f"HTTP error occurred: {http_err}")
     
-# Función para subir archivo y actualizar metadatos
 def sharepoint(file_path, file_name, alien_number, site_name, case_type):
-
+    """Función para subir archivo y actualizar metadatos en SharePoint"""
     # Authentificacion a SharePoint
     authcookie = Office365(sharepoint_url, username=username, password=password).GetCookies()
     site = Site(f"{sharepoint_url}/sites/{site_name}", version=Version.v365, authcookie=authcookie)

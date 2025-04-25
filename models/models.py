@@ -22,6 +22,24 @@ def search_in_coords(coord_list : list, coord_x : int , coord_y: int, item) -> s
         status = pytesseract.image_to_string(region)
         status = status.replace("\n", "").replace("/", "")
         return status
+    
+def extrct_value(texto: str, key_words_dict: dict) -> str | None:
+    for key, value in key_words_dict.items():
+        if key in texto:
+            return value
+    return None
+
+def search_status(doc_config, coord_x, coord_y, anchor, item) -> str | None:
+    if anchor in doc_config['anchor']:
+        # Buscar en coordenadas normales
+        status = search_in_coords(doc_config['second_coords'], coord_x, coord_y, item)
+        value = extrct_value(status, doc_config.get("second_key_words", {}))
+        if value:
+            return value
+
+        # Luego buscar en coordenadas de excepción
+        status = search_in_coords(doc_config['except_coords'], coord_x, coord_y, item)
+        return extrct_value(status, doc_config.get("except_key_words", {}))
 
 #MODULO A MEJORAR
 class Model():
@@ -75,10 +93,7 @@ class Model():
                     text = [line.strip() for line in text.split("\n") if line.strip()]
 
                     # print(f"Text extract: {"".join(text)}", f"X: {region_x - x}", f"Y: {region_y - y}")
-                    # print(f"Text extrac: {"".join(text)}")
 
-                    # Filtrar posibles errores (puedes mejorar este criterio)
-                    # if text:
                     return " ".join(text)  # Devolver como una sola línea de texto                
         except Exception as e:
             print(f"Error en OCR: {e}")
@@ -86,29 +101,12 @@ class Model():
 
     def find_receipts(self) -> str:
         """Busca el tipo de documento utilizando coordenadas y palabras clave definidas en un JSON."""
-
         try:
             json_path = f"jsons/search_42BReceipts.json"
             doc_definitions = load_json_cached(json_path)  # Es una lista
             results = []
 
             for doc_config in doc_definitions:  # Iteramos sobre cada objeto del JSON
-                def buscar_status(coord_x, coord_y) -> str | None:
-                    # Buscar en coordenadas normales
-                    status = search_in_coords(doc_config['second_coords'], coord_x, coord_y, self.item)
-                    value = extraer_valor(status, doc_config.get("second_key_words", {}))
-                    if value:
-                        return value
-
-                    # Luego buscar en coordenadas de excepción
-                    status = search_in_coords(doc_config['except_coords'], coord_x, coord_y, self.item)
-                    return extraer_valor(status, doc_config.get("except_key_words", {}))
-
-                def extraer_valor(texto: str, key_words_dict: dict) -> str | None:
-                    for key, value in key_words_dict.items():
-                        if key in texto:
-                            return value
-                    return None
 
                 for i, word in enumerate(self.data_ocr['text']):
                     if word != doc_config['anchor']:
@@ -122,7 +120,7 @@ class Model():
                         if key_word not in search_word:
                             continue
                     
-                    resultado = buscar_status(coord_x, coord_y)
+                    resultado = search_status(doc_config,coord_x, coord_y, word, self.item)
                     if resultado:
                         results.append(resultado)
                         break  # Si ya encontró uno, no necesita seguir con las demás definiciones
@@ -140,55 +138,22 @@ class Model():
             results = []
 
             for doc_config in doc_definitions:  # Iteramos sobre cada objeto del JSON
-                def buscar_status(coord_x, coord_y, anchor) -> str | None:
-                    # Buscar en coordenadas normales
-                    if anchor in doc_config['anchor']:
-                        # print(doc_config['second_coords'], f"anchor: {anchor}")
-                        status = search_in_coords(doc_config['second_coords'], coord_x, coord_y, self.item)
-                        # print(f"status: {status}, anchor: {anchor}")
-                        value = extraer_valor(status, doc_config.get("second_key_words", {}))
-                        # print(f"value: {value}, anchor: {anchor}")
-                        if value:
-                            # print(f"value: {value}")
-                            return value
-
-                        # Luego buscar en coordenadas de excepción
-                        status = search_in_coords(doc_config['except_coords'], coord_x, coord_y, self.item)
-                        # print(f"status: {status}")
-                        return extraer_valor(status, doc_config.get("except_key_words", {}))
-
-                def extraer_valor(texto: str, key_words_dict: dict) -> str | None:
-                    for key, value in key_words_dict.items():
-                        if key in texto:
-                            # print(f"key: {key}, value: {value}, text: {texto}")
-                            return value
-                    return None
-
                 for i, word in enumerate(self.data_ocr['text']):
                     if word != doc_config['anchor']:
                         continue
                     
-                    # print(f"word: {word}, anchor: {doc_config['anchor']}")
-
                     coord_x = self.data_ocr['left'][i]
                     coord_y = self.data_ocr['top'][i]
                     search_word = search_in_coords(doc_config['first_coords'], coord_x, coord_y, self.item)
 
-                    # print(f"search_word: {search_word}, first_key_word: {doc_config['first_key_word']}, and word: {word}")
-
                     for key_word in doc_config['first_key_word']:
-                        # print(f"first_key_word: {search_word} search_word: {doc_config['first_key_word']} word: {word}")
                         if key_word not in search_word:
                             continue
                     
-                    resultado = buscar_status(coord_x, coord_y, word)
-                    # print(f"resultado: {resultado}")
+                    resultado = search_status(doc_config, coord_x, coord_y, word, self.item)
                     if resultado:
                         results.append(resultado)
                         break  # Si ya encontró uno, no necesita seguir con las demás definiciones
-
-            # print(f"Results: {results}")
-            # print(f"Results: {results}")
 
             return results[0] if results else None
         except Exception as e:

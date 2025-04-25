@@ -1,5 +1,4 @@
 import os
-import re
 import uuid
 import json
 import shutil
@@ -129,9 +128,6 @@ def save_and_ocr_optimized(result, processed_path, option, pdf_save):
         print(f"❌ Error guardando PDF individual: {e}")
         return None
     
-def sanitize_filename(name):
-    return re.sub(r'[\\/*?:"<>|]', "_", name)
-
 def merge_pages(images, result, processed_path, option, pages_number=None):
     try:
         output_pdf_path = os.path.join(processed_path, f"{result['name']}.pdf")
@@ -165,33 +161,32 @@ def merge_pages(images, result, processed_path, option, pages_number=None):
         print(f"❌ Error guardando PDF combinado (imágenes): {e}")
         return None
 
-
 def exect_funct_optimized(doc_type, page, option, processed_path, json_type, save_pdf):
     try:
         doc_config = {
             "42BReceipts": {
-                "Payment": ("Payment", 1, "Payment"),
+                "Payment": ("Payment", 1, "Payment", "page1"),
                 "Receipts1": ("Receipts_42B", 2, "Receipts", "page1"),
                 "Receipts2": ("Receipts_42B", 2, "Receipts", "page2"),
-                "Appointment": ("Appointment_42B", 1, "Appointment"),
-                "Reused": ("Reused_42B", 1, "Reused"),
+                "Appointment": ("Appointment_42B", 1, "Appointment", "page1"),
+                "Reused": ("Reused_42B", 1, "Reused", "page1"),
             },
             "Asylum": {
-                "Appointment": ("Appointment_asylum", 1, "Appointment"),
-                "Appointment_asylum_2020": ("Appointment_asylum_2020", 1, "Appointment"),
-                "Appointment_asylum_2019": ("Appointment_asylum_2019", 1, "Appointment"),
-                "Appointment_asylum_2021":("Appointment_asylum_2021", 1, "Appointment"),
-                "Approved_receipts": ("Approved_cases_asylum", 1, "Approved_receipts"),
-                "Payment_receipt": ("Asylum_receipt", 1, "Payment_receipt"),
-                "Defensive_receipt_2024": ("Defensive_receipt_2024", 1, "Defensive_receipt"),
-                "Defensive_receipt_2020": ("Defensive_receipt_2020", 1, "Defensive_receipt"),
-                "Defensive_receipt_2019":("Defensive_receipt_2019", 1, "Defensive_receipt"),
-                "Application_to_asylum": ("Application_to_asylum", 1, "Application_to_asylum"),
-                "Reused": ("Reused_asylum", 1, "Reused"),
-                "Reused_2018":("Reused_2018", 1, "Reused"),
-                "Reject": ("Reject", 1, "Reject"),
-                "Reject_2020": ("Reject_2020", 1, "Reject"),
-                "Receipt": ("Receipt", 1, "Receipts")
+                "Appointment": ("Appointment_asylum", 1, "Appointment", "page1"),
+                "Appointment_asylum_2020": ("Appointment_asylum_2020", 1, "Appointment", "page1"),
+                "Appointment_asylum_2019": ("Appointment_asylum_2019", 1, "Appointment", "page1"),
+                "Appointment_asylum_2021":("Appointment_asylum_2021", 1, "Appointment", "page1"),
+                "Approved_receipts": ("Approved_cases_asylum", 1, "Approved_receipts", "page1"),
+                "Payment_receipt": ("Asylum_receipt", 1, "Payment_receipt", "page1"),
+                "Defensive_receipt_2024": ("Defensive_receipt_2024", 1, "Defensive_receipt", "page1"),
+                "Defensive_receipt_2020": ("Defensive_receipt_2020", 1, "Defensive_receipt", "page1"),
+                "Defensive_receipt_2019":("Defensive_receipt_2019", 1, "Defensive_receipt", "page1"),
+                "Application_to_asylum": ("Application_to_asylum", 1, "Application_to_asylum", "page1"),
+                "Reused": ("Reused_asylum", 1, "Reused", "page1"),
+                "Reused_2018":("Reused_2018", 1, "Reused", "page1"),
+                "Reject": ("Reject", 1, "Reject", "page1"),
+                "Reject_2020": ("Reject_2020", 1, "Reject", "page1"),
+                "Receipt": ("Receipt", 1, "Receipts", "page1")
             }
         }
 
@@ -221,7 +216,6 @@ def exect_funct_optimized(doc_type, page, option, processed_path, json_type, sav
                 "pages_number": []
             })
 
-
             # Añadimos la página
             pending_merges[used_key]["pages"].append(page)
             pending_merges[used_key]["pages_number"].append(page_number)
@@ -243,7 +237,6 @@ def exect_funct_optimized(doc_type, page, option, processed_path, json_type, sav
                 "doc_type": kind_of_doc,
                 "folder_name": option
             }
-            print("returning result")
             return save_and_ocr_optimized(result, processed_path, option, save_pdf)
         
     except Exception as e:
@@ -319,7 +312,6 @@ def optimized_indexing(pdf: str, option: str, input_path: str, processed_path: s
             poppler_path=r'C:\Users\simon\Downloads\Release-24.08.0-0\poppler-24.08.0\Library\bin'
         )
         
-        # json_type = "42B" if option == "42BReceipts" else "Asylum"
         results = process_pages_parallel(pages, option, processed_path, option)
         
         shutil.move(pdf_path, os.path.join(processed_path, pdf))

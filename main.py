@@ -103,7 +103,6 @@ class PDFMonitorGUI(QMainWindow):
         for pdf_info in self.pdf_data:
             row_position = self.table.rowCount()
             self.table.insertRow(row_position)
-            
             self.table.setItem(row_position, 0, QTableWidgetItem(pdf_info['name']))
             self.table.setItem(row_position, 1, QTableWidgetItem(pdf_info['folder']))
             self.table.setItem(row_position, 2, QTableWidgetItem(pdf_info['date_added']))
@@ -136,12 +135,7 @@ class PDFMonitorGUI(QMainWindow):
 
     def show_json_table(self, json_data):
         """Muestra los datos JSON en una nueva ventana"""
-        # Asegurarnos de que cada elemento del JSON tenga la ruta del PDF
-        # for item in json_data:
-        #     if 'pdf' not in item:
-        #         item['pdf'] = pdf_path
         
-        # Crear y mostrar la ventana de resultados para luego realizar el QA
         self.json_window = Json_table(json_data)
         self.json_window.setWindowModality(Qt.WindowModal)  # Modal respecto a la ventana principal
         self.json_window.show()
@@ -197,13 +191,9 @@ class PDFMonitorGUI(QMainWindow):
 
 def main():
     app = QApplication([])
-    
-    # Establecer estilo moderno
     app.setStyle('Fusion')
-    
     window = PDFMonitorGUI()
     window.show()
-    
     app.exec_()
 
 if __name__ == "__main__":

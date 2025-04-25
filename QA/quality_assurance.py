@@ -1,15 +1,13 @@
 import os
 import sys
-import traceback
 import subprocess
-from PIL import Image
 from io import BytesIO
 from PyQt5.QtCore import Qt
 from services.ocr import ocr
-from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtGui import QPixmap
 from pdf2image import convert_from_path
 from services.conection import sharepoint
-from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QTableWidget, QAbstractItemView, QLabel, QPushButton, QTableWidgetItem, QVBoxLayout, QProgressDialog, QApplication, QMessageBox, QScrollArea, QFrame)
+from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QTableWidget, QAbstractItemView, QLabel, QPushButton, QTableWidgetItem, QVBoxLayout, QProgressDialog, QApplication, QMessageBox)
 
 class Json_table(QWidget):
     def __init__(self, data_list):
@@ -51,7 +49,6 @@ class Json_table(QWidget):
             }
         """)
         self.content_layout.addWidget(self.preview_label, 6)  # 60% del espacio
-        
 
         # Añadir el layout horizontal al layout principal
         self.main_layout.addLayout(self.content_layout)
@@ -261,7 +258,7 @@ class Json_table(QWidget):
             self.preview_label.setPixmap(self.current_pixmap)
 
     def resizeEvent(self, event):
-        """Maneja el redimensionamiento de la ventana SIN reescalar la imagen"""
+        """Maneja el redimensionamiento de la ventana sin reescalar la imagen"""
         super().resizeEvent(event)
         # Solo mostramos el pixmap actual sin volver a escalar
         if hasattr(self, 'current_pixmap'):
