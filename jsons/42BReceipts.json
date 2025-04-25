@@ -18,46 +18,25 @@
             }
         ], 
         "key_word":"ADJUST"
-    },{
+    },
+    {
         "pdf": "Payment",
         "name": [
+            
             {
-                "x": 742,
-                "y": 391,
-                "width": 684,
-                "height": 36
-            }, 
-            {
-                "x": 263,
-                "y": 497,
-                "width": 486,
-                "height": 46
-            },
-            {
-                "x": 261,
-                "y": 525,
-                "width": 504,
-                "height": 30
+                "x": 128,
+                "y": 30,
+                "width": 500,
+                "height": 34
             }
         ], 
         "a_number":[
+            
             {
-                "x": 841,
-                "y": 371,
-                "width": 241,
-                "height": 29
-            }, 
-            {
-                "x": 865,
-                "y": 360,
-                "width": 183,
-                "height": 35
-            }, 
-            {
-                "x": 1127,
-                "y": 340,
+                "x": 137,
+                "y": -14,
                 "width": 188,
-                "height": 38
+                "height": 42
             }
         ], "key_word":"APPLICANT"
     },
@@ -80,7 +59,7 @@
             }
         ], 
         "key_word":"Priority"
-    }, 
+    },
     {
         "pdf": "Reused_42B",
         "name": [

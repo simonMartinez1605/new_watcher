@@ -166,7 +166,7 @@
                 "h": 140
             }
         ],
-        "first_key_word": ["Page2"],
+        "first_key_word": ["Page1", "Page2"],
         "second_coords": [
             {
                 "x": 0,
@@ -176,7 +176,8 @@
             }
         ],
         "second_key_words": {
-            "Page2": "Receipts"
+            "Page1": "Receipts1", 
+            "Page2": "Receipts2"
         },
         "except_coords": [
             {
@@ -187,7 +188,8 @@
             }
         ],
         "except_key_words": {
-            "Page2": "Receipts"
+            "Page1": "Receipts1", 
+            "Page2": "Receipts2"
         }
     }
 ]

@@ -118,8 +118,7 @@ class PDFMonitorGUI(QMainWindow):
             
             try:
                 # Ejecutar la función de indexing
-                json_data = indexing(pdf_info['full_path'], pdf_info['option'], 
-                                pdf_info['folder_path'], Path(pdf_info['folder_path']) / "Process")
+                json_data = indexing(pdf_info['full_path'], pdf_info['option'], pdf_info['folder_path'], Path(pdf_info['folder_path']) / "Process")
                 
                 # Mostrar los resultados en una nueva ventana
                 self.show_json_table(json_data)

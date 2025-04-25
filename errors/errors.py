@@ -1,7 +1,7 @@
-from PyPDF2 import PdfWriter
 import os 
 import re
 import uuid
+from PyPDF2 import PdfWriter
 
 def custom_errors(pages_pdf : list ,quantity:int) -> bool: 
     """Manejo de errores customizado por cada una de las hojas guardadas dentro del pdf"""

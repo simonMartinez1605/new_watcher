@@ -1,4 +1,5 @@
 import os
+import re
 import uuid
 import json
 import shutil
@@ -13,6 +14,7 @@ from models.models import Model
 from PIL import Image, ImageFilter
 from pdf2image import convert_from_path
 from services.deskewing import deskew_image
+from services.compare_keys import find_similar_key
 from errors.errors import regex_name, regex_alien_number
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -22,6 +24,8 @@ load_dotenv()
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 # Configuración global
 _JSON_CACHE = {}
+
+pending_merges = {}
 
 def load_json_cached(file_path: str) -> dict:
     """Carga JSON con caché para evitar lecturas repetidas de disco"""
@@ -124,17 +128,53 @@ def save_and_ocr_optimized(result, processed_path, option, pdf_save):
     except Exception as e:
         print(f"❌ Error guardando PDF individual: {e}")
         return None
+    
+def sanitize_filename(name):
+    return re.sub(r'[\\/*?:"<>|]', "_", name)
+
+def merge_pages(images, result, processed_path, option, pages_number=None):
+    try:
+        output_pdf_path = os.path.join(processed_path, f"{result['name']}.pdf")
+
+        # Si se proporciona pages_number, ordenar las imágenes en base a ese orden
+        if pages_number:
+            # Emparejar páginas con sus números
+            paired = list(zip(pages_number, images))
+
+            # Extraer número como entero de strings tipo "page2"
+            def extract_page_num(p): return int(p.replace("page", "").strip())
+            paired.sort(key=lambda x: extract_page_num(x[0]))
+
+            # Obtener imágenes ordenadas
+            ordered_images = [img.convert('RGB') for _, img in paired]
+        else:
+            # Si no hay pages_number, convertir directamente todas las imágenes a RGB
+            ordered_images = [img.convert('RGB') for img in images]
+
+        # Guardar el PDF
+        ordered_images[0].save(output_pdf_path, save_all=True, append_images=ordered_images[1:])
+
+        return {
+            "name": regex_name(result['name']),
+            "alien_number": regex_alien_number(result['alien_number']),
+            "pdf": output_pdf_path,
+            "doc_type": result.get('doc_type'),
+            "folder_name": option
+        }
+    except Exception as e:
+        print(f"❌ Error guardando PDF combinado (imágenes): {e}")
+        return None
+
 
 def exect_funct_optimized(doc_type, page, option, processed_path, json_type, save_pdf):
-    """Versión optimizada de la función de ejecución"""
     try:
-        # Mapeo de tipos de documento a sus parámetros
         doc_config = {
             "42BReceipts": {
-                "Payment": ("Payment", "42B", 1),
-                "Receipts": ("Receipts_42B", "42B", 2),
-                "Appointment": ("Appointment_42B", "42B", 1),
-                "Reused": ("Reused_42B", "42B", 1)
+                "Payment": ("Payment", 1, "Payment"),
+                "Receipts1": ("Receipts_42B", 2, "Receipts", "page1"),
+                "Receipts2": ("Receipts_42B", 2, "Receipts", "page2"),
+                "Appointment": ("Appointment_42B", 1, "Appointment"),
+                "Reused": ("Reused_42B", 1, "Reused"),
             },
             "Asylum": {
                 "Appointment": ("Appointment_asylum", 1, "Appointment"),
@@ -155,31 +195,61 @@ def exect_funct_optimized(doc_type, page, option, processed_path, json_type, sav
             }
         }
 
-        # Obtener configuración según el tipo de documento
         config = doc_config.get(option, {}).get(doc_type)
         if not config:
             print(f"❌ Tipo de documento no reconocido: {doc_type}")
             result = {"name": f"{uuid.uuid4()}", "alien_number": f"{random.randint(1,10000)}", "doc_type": f"{uuid.uuid4()}", "folder_name":option}
             return save_and_ocr_optimized(result, processed_path, option, save_pdf)
 
-        type_name, sheets_quantity, kind_of_doc = config
+        type_name, sheets_quantity, kind_of_doc, page_number = config
+        name = search_in_doc_optimized(page, type_name, "name", option) or str(uuid.uuid4())
+        alien_number = search_in_doc_optimized(page, type_name, "a_number", option) or f"A{random.randint(1, 10000)}"
+        
+        key = f"{name}_{sheets_quantity}_{kind_of_doc}"
+        
+        if sheets_quantity > 1:
+            # Buscar si ya hay una key similar
+            similar_key = find_similar_key(key, pending_merges)
 
-        # Búsqueda optimizada
-        name = search_in_doc_optimized(page, type_name, "name", option)
-        alien_number = search_in_doc_optimized(page, type_name, "a_number", option)
+            # Usar la key similar o la original
+            used_key = similar_key if similar_key else key
 
-        if not name:
-            print(f"❌ The system can't find Name: {name}")
-            name = f"{uuid.uuid4()}" 
-
-        if not alien_number: 
-            print(f"❌ The system can't find Alien Number: {alien_number}")
-            alien_number = f"A{random.randint(1, 10000)}"
+            # Si no existe, inicializamos
+            pending_merges.setdefault(used_key, {
+                "pages": [],
+                "meta": {"name": name, "alien_number": alien_number, "doc_type": kind_of_doc}, 
+                "pages_number": []
+            })
 
 
-        result = {"name": name, "alien_number": alien_number, "doc_type": kind_of_doc, "folder_name":option}
-        return save_and_ocr_optimized(result, processed_path, option, save_pdf)
+            # Añadimos la página
+            pending_merges[used_key]["pages"].append(page)
+            pending_merges[used_key]["pages_number"].append(page_number)
 
+            if len(pending_merges[used_key]['pages']) == sheets_quantity:
+                merged = merge_pages(
+                    pending_merges[used_key]["pages"],
+                    pending_merges[used_key]["meta"],
+                    processed_path,
+                    option, 
+                    pending_merges[used_key]["pages_number"]
+                )
+                del pending_merges[used_key]
+                return merged
+        else: 
+            result = {
+                "name": name,
+                "alien_number": alien_number,
+                "doc_type": kind_of_doc,
+                "folder_name": option
+            }
+            print("returning result")
+            return save_and_ocr_optimized(result, processed_path, option, save_pdf)
+        
+    except Exception as e:
+        print(f"❌ Error en exect_funct_optimized: {e}")
+        traceback.print_exc()
+        return None
     except Exception as e:
         print(f"❌ Error en exect_funct_optimized: {e}")
         traceback.print_exc()
@@ -192,7 +262,7 @@ def process_single_page(page, option, processed_path, json_type):
         model = process_page_optimized(page)
         if not model:
             return None
-            
+        
         # Guardar página en PDF
         image_stream = BytesIO()
         page.save(image_stream, format="PDF")
@@ -249,8 +319,8 @@ def optimized_indexing(pdf: str, option: str, input_path: str, processed_path: s
             poppler_path=r'C:\Users\simon\Downloads\Release-24.08.0-0\poppler-24.08.0\Library\bin'
         )
         
-        json_type = "42B" if option == "42BReceipts" else "Asylum"
-        results = process_pages_parallel(pages, option, processed_path, json_type)
+        # json_type = "42B" if option == "42BReceipts" else "Asylum"
+        results = process_pages_parallel(pages, option, processed_path, option)
         
         shutil.move(pdf_path, os.path.join(processed_path, pdf))
         return [r for r in results if r is not None]
