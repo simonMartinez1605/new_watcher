@@ -21,6 +21,7 @@ def search_in_coords(coord_list : list, coord_x : int , coord_y: int, item) -> s
         region = item.crop((x, y, x + w, y + h))
         status = pytesseract.image_to_string(region)
         status = status.replace("\n", "").replace("/", "")
+        # print(f"Text extract: {status}, coord_X :{coord['x'] - coord_x}, coord_y : {coord['y'] - coord_y}")
         return status
     
 def extrct_value(texto: str, key_words_dict: dict) -> str | None:
@@ -33,6 +34,7 @@ def search_status(doc_config, coord_x, coord_y, anchor, item) -> str | None:
     if anchor in doc_config['anchor']:
         # Buscar en coordenadas normales
         status = search_in_coords(doc_config['second_coords'], coord_x, coord_y, item)
+        # print(status)
         value = extrct_value(status, doc_config.get("second_key_words", {}))
         if value:
             return value
@@ -141,10 +143,14 @@ class Model():
                 for i, word in enumerate(self.data_ocr['text']):
                     if word != doc_config['anchor']:
                         continue
+
+                    # print(f"word: {word}, coord_x: {self.data_ocr['left'][i]}, coord_y: {self.data_ocr['top'][i]}")
                     
                     coord_x = self.data_ocr['left'][i]
                     coord_y = self.data_ocr['top'][i]
                     search_word = search_in_coords(doc_config['first_coords'], coord_x, coord_y, self.item)
+
+                    # print(f"search_word: {search_word} Word: {word}")
 
                     for key_word in doc_config['first_key_word']:
                         if key_word not in search_word:
@@ -154,7 +160,7 @@ class Model():
                     if resultado:
                         results.append(resultado)
                         break  # Si ya encontró uno, no necesita seguir con las demás definiciones
-
+            # print(f"Results: {results}")
             return results[0] if results else None
         except Exception as e:
             print(f"Error in asylum search module: {e}")

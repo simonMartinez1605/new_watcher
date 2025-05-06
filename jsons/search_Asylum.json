@@ -1,5 +1,46 @@
 
 [
+    {
+        "doc_type": "Receipts Asylum", 
+        "anchor":"Page", 
+        "first_coords":[
+            {
+                "x": 509,
+                "y": 92,
+                "w": 369,
+                "h": 80
+            }
+        ],
+        "first_key_word":["Receipt"], 
+        "second_coords":[
+            {
+                "x": -19,
+                "y": -11,
+                "w": 108,
+                "h": 70
+            }
+        ],
+        "second_key_words":{
+            "Page1": "Receipts1", 
+            "Page2": "Receipts2"
+            
+        },
+        "except_coords":[
+            {
+                "x": -8,
+                "y": -13,
+                "w": 108,
+                "h": 75
+            }
+        ],
+        "except_key_words":{
+            "PageL": "Receipts1",
+            "Pagelof2": "Receipts1", 
+            "Page2of2": "Receipts2",
+            "Page1": "Receipts1",
+            "Page2": "Receipts2"
+        }
+    },
     {   
         "doc_type": "Appointment",
         "anchor":"WITHHOLDING", 
@@ -23,6 +64,8 @@
         "second_key_words":{
             "2025": "Appointment", 
             "2024": "Appointment", 
+            "2023": "Appointment_asylum_2022",
+            "2022": "Appointment_asylum_2022",
             "2021": "Appointment_asylum_2021",
             "2020": "Appointment_asylum_2020",
             "2019": "Appointment_asylum_2019",
@@ -37,6 +80,8 @@
             }
         ], 
         "except_key_words":{
+            "2025": "Appointment_asylum_2022",
+            "2022": "Appointment_asylum_2022",
             "2018": "Appointment_asylum_2019",
             "201": "Appointment_asylum_2019",
             "2019": "Appointment_asylum_2019",
@@ -126,7 +171,7 @@
             "2020": "Defensive_receipt_2020",
             "2019": "Defensive_receipt_2019"
         }
-    }, 
+    },
     {
         "doc_type": "Reused",
         "anchor": "REMOVAL",

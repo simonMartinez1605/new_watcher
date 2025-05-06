@@ -172,10 +172,13 @@ def exect_funct_optimized(doc_type, page, option, processed_path, json_type, sav
                 "Reused": ("Reused_42B", 1, "Reused", "page1"),
             },
             "Asylum": {
+                "Receipts1": ("Receipts_Asylum", 2, "Receipts", "page1"),
+                "Receipts2": ("Receipts_Asylum", 2, "Receipts", "page2"),
                 "Appointment": ("Appointment_asylum", 1, "Appointment", "page1"),
                 "Appointment_asylum_2020": ("Appointment_asylum_2020", 1, "Appointment", "page1"),
                 "Appointment_asylum_2019": ("Appointment_asylum_2019", 1, "Appointment", "page1"),
                 "Appointment_asylum_2021":("Appointment_asylum_2021", 1, "Appointment", "page1"),
+                "Appointment_asylum_2022":("Appointment_asylum_2022", 1, "Appointment", "page1"),
                 "Approved_receipts": ("Approved_cases_asylum", 1, "Approved_receipts", "page1"),
                 "Payment_receipt": ("Asylum_receipt", 1, "Payment_receipt", "page1"),
                 "Defensive_receipt_2024": ("Defensive_receipt_2024", 1, "Defensive_receipt", "page1"),

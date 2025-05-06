@@ -20,6 +20,26 @@
         "key_word":"Applicant"
     },
     {
+        "pdf":"Receipts_Asylum", 
+        "name": [
+            {
+                "x": 346,
+                "y": -39,
+                "width": 452,
+                "height": 32
+            }
+        ],
+        "a_number":[
+            {
+                "x": 429,
+                "y": -62,
+                "width": 158,
+                "height": 30
+            }
+        ],
+        "key_word":"Page"
+    },
+    {
         "pdf": "Asylum_receipt",
         "name": [
             {
@@ -60,6 +80,46 @@
         "key_word":"WITHHOLDING"
     },
     {
+        "pdf": "Appointment_asylum_2022",
+        "name": [
+            {
+                "x": -447,
+                "y": 105,
+                "width": 555,
+                "height": 68
+            }
+        ], 
+        "a_number":[
+            {
+                "x": 605,
+                "y": -9,
+                "width": 199,
+                "height": 48
+            }
+        ], 
+        "key_word":"WITHHOLDING"
+    },
+    {
+        "pdf": "Appointment_asylum_2021",
+        "name": [
+            {
+                "x": -409,
+                "y": 80,
+                "width": 546,
+                "height": 45
+            }
+        ], 
+        "a_number":[
+            {
+                "x": 605,
+                "y": -9,
+                "width": 199,
+                "height": 48
+            }
+        ], 
+        "key_word":"WITHHOLDING"
+    },
+    {
         "pdf": "Appointment_asylum_2020",
             "name": [
             {
@@ -76,26 +136,6 @@
                 "width": 180,
                 "height": 90
 
-            }
-        ], 
-        "key_word":"WITHHOLDING"
-    },
-    {
-        "pdf": "Appointment_asylum_2021",
-        "name": [
-            {
-                "x": -409,
-                "y": 112,
-                "width": 546,
-                "height": 52
-            }
-        ], 
-        "a_number":[
-            {
-                "x": 605,
-                "y": -9,
-                "width": 199,
-                "height": 48
             }
         ], 
         "key_word":"WITHHOLDING"
