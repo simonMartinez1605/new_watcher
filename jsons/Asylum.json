@@ -1,5 +1,185 @@
 [
     {
+        "pdf":"Defensive_receipt_2023", 
+        "name":[
+            {
+                "x": -732,
+                "y": -1,
+                "width": 364,
+                "height": 24
+            }
+        ],
+        "a_number":[
+            {
+                "x": -168,
+                "y": -71,
+                "width": 115,
+                "height": 18
+            }
+        ],
+        "key_word":"Defensive"
+    },
+    {
+        "pdf": "Receipt_2023", 
+        "name":[
+            {
+                "x": -713,
+                "y": 0,
+                "width": 404,
+                "height": 25
+            }
+        ], 
+        "a_number":[
+            {
+                "x": -172,
+                "y": -77,
+                "width": 144,
+                "height": 19
+            }
+        ],
+        "key_word":"Receipt"
+    },
+    {
+        "pdf":"Interview_Waiver_1",
+        "name": [
+            {
+                "x": -470,
+                "y": -125,
+                "width": 298,
+                "height": 60
+            }
+        ], 
+        "a_number": [
+            {
+                "x": -410,
+                "y": -180,
+                "width": 204,
+                "height": 50
+            }
+        ],
+        "key_word":"Waiver"
+    },
+    {
+        "pdf": "Interview_Waiver_2",
+        "name": [
+            {
+                "x": 0,
+                "y": -410,
+                "width": 282,
+                "height": 60
+            }
+        ], 
+        "a_number": [
+            {
+                "x": 5,
+                "y": -450,
+                "width": 252,
+                "height": 40
+            }
+        ],
+        "key_word":"(Printed"
+    },
+    {
+        "pdf":"Evidence_notice_1", 
+        "name":[
+            {
+                "x": -470,
+                "y": -160,
+                "width": 350,
+                "height": 63
+            }
+        ],
+        "a_number":[
+            {
+                "x": -380,
+                "y": -195,
+                "width": 135,
+                "height": 60
+            }
+        ],
+        "key_word":"Evidence"
+    },
+    {
+        "pdf":"Evidence_notice_2",
+        "name":[
+            {
+                "x": -630,
+                "y": -600,
+                "width": 300,
+                "height": 60
+            }
+        ],
+        "a_number":[
+            {
+                "x": 270,
+                "y": -600,
+                "width": 300,
+                "height": 60
+            }
+        ],
+        "key_word":"(Printed"
+    },
+    {
+        "pdf":"Lack_notice",
+        "name":[
+            {
+                "x": -510,
+                "y": -85,
+                "width": 480,
+                "height": 60
+            }
+        ], 
+        "a_number":[
+            {
+                "x": -51,
+                "y": -100,
+                "width": 220,
+                "height": 60
+            }
+        ],
+        "key_word":"Lack"
+    },
+    {
+        "pdf":"Notice", 
+        "name":[
+            {
+                "x": -106,
+                "y": -61,
+                "width": 222,
+                "height": 16
+            }
+        ],
+        "a_number":[
+            {
+                "x": -47,
+                "y": -81,
+                "width": 98,
+                "height": 18
+            }
+        ],
+        "key_word":"Please"
+    },
+    {
+        "pdf":"Receipts_Asylum_2023",
+        "name":[
+            {
+                "x": -424,
+                "y": 138,
+                "width": 486,
+                "height": 61
+            }
+        ],
+        "a_number":[
+            {
+                "x": -2,
+                "y": 12,
+                "width": 160,
+                "height": 35
+            }
+        ],
+        "key_word":"Applicant"
+    },
+    {
         "pdf": "Approved_cases_asylum",
         "name": [
             {

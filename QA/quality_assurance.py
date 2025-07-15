@@ -7,6 +7,7 @@ from services.ocr import ocr
 from PyQt5.QtGui import QPixmap
 from pdf2image import convert_from_path
 from services.conection import sharepoint
+from QA.upperCaseDelegate import UpperCaseDelegate
 from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QTableWidget, QAbstractItemView, QLabel, QPushButton, QTableWidgetItem, QVBoxLayout, QProgressDialog, QApplication, QMessageBox)
 
 class Json_table(QWidget):
@@ -31,7 +32,7 @@ class Json_table(QWidget):
         self.table = QTableWidget()
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.table.itemSelectionChanged.connect(self.show_pdf_preview)
-        self.content_layout.addWidget(self.table, 4)  # 40% del espacio
+        self.content_layout.addWidget(self.table, 5)  # 40% del espacio
 
         self.navigation_layout = QHBoxLayout()
 
@@ -54,7 +55,7 @@ class Json_table(QWidget):
         self.main_layout.addLayout(self.content_layout)
 
         # Crear y añadir el botón en la parte inferior
-        self.button = QPushButton("Exportar")
+        self.button = QPushButton("Export")
         self.button.setStyleSheet("""
             QPushButton {
                 background-color: #4CAF50;
@@ -82,6 +83,8 @@ class Json_table(QWidget):
         self.main_layout.addWidget(self.button, alignment=Qt.AlignRight)
 
         self.load_data(self.data)
+        self.upper_delegate = UpperCaseDelegate()
+        self.table.setItemDelegateForColumn(0, self.upper_delegate)
         self.table.itemChanged.connect(self.update_json_from_table)
 
         self.progress_label = QLabel(self)
@@ -280,9 +283,16 @@ class Json_table(QWidget):
                 QApplication.processEvents()
 
                 try: 
-
                     ocr(data['pdf'])
-                    sharepoint(data['pdf'], f"{data['name']}-{data['doc_type']}.pdf", data['alien_number'], data['folder_name'], data['doc_type'])
+                    folder_metadata = {
+                        "PL": data['pl'],
+                        "Case_x0020_type": data['case_type'],
+                    }
+                    metadata_dict = {
+                        "PL": data['pl'],
+                        "Case_x0020_type": data['case_type'],
+                    }
+                    sharepoint(data['pdf'], f"{data['name']}.pdf", data['folder_name'], data['name'],metadata_dict)
                 except Exception as e: 
                     print(f"Error to process data: {e}")
 

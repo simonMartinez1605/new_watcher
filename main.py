@@ -4,6 +4,7 @@ import uuid
 import threading
 import smbclient
 from pathlib import Path
+from pypdf import PdfReader
 from PyQt5.QtGui import QFont
 from dotenv import load_dotenv
 from rich.console import Console
@@ -25,7 +26,7 @@ smbclient.ClientConfig(username=os.getenv('SERVER_USER'), password=os.getenv('SE
 folders_to_monitor = [
     rf"\\{path_share_folder}\Asylum",
     rf"\\{path_share_folder}\42BReceipts",
-    # Agrega más carpetas según sea necesario
+    rf"\\{path_share_folder}\FamilyClosedCases",
 ]
 
 class PDFMonitorGUI(QMainWindow):
@@ -71,11 +72,12 @@ class PDFMonitorGUI(QMainWindow):
         
         # Tabla para mostrar los PDFs
         self.table = QTableWidget()
-        self.table.setColumnCount(3)
-        self.table.setHorizontalHeaderLabels(["Document", "Folder", "Date"])
+        self.table.setColumnCount(4)
+        self.table.setHorizontalHeaderLabels(["Document", "Folder", "Date", "Pages"])
         self.table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
-        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
-        self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        self.table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
+        self.table.horizontalHeader().setSectionResizeMode(3, QHeaderView.Stretch)
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
         self.table.doubleClicked.connect(self.process_selected_pdf)
@@ -102,10 +104,12 @@ class PDFMonitorGUI(QMainWindow):
         
         for pdf_info in self.pdf_data:
             row_position = self.table.rowCount()
+            # print(pdf_info)
             self.table.insertRow(row_position)
             self.table.setItem(row_position, 0, QTableWidgetItem(pdf_info['name']))
             self.table.setItem(row_position, 1, QTableWidgetItem(pdf_info['folder']))
             self.table.setItem(row_position, 2, QTableWidgetItem(pdf_info['date_added']))
+            self.table.setItem(row_position, 3, QTableWidgetItem(pdf_info['pages']))
     
     def process_selected_pdf(self):
         """Procesa el PDF seleccionado al hacer doble click"""
@@ -117,13 +121,13 @@ class PDFMonitorGUI(QMainWindow):
             
             try:
                 # Ejecutar la función de indexing
-                json_data = indexing(pdf_info['full_path'], pdf_info['option'], pdf_info['folder_path'], Path(pdf_info['folder_path']) / "Process")
+                json_data = indexing(pdf_info['full_path'], pdf_info['option'], pdf_info['folder_path'], Path(pdf_info['folder_path']) / "Process", int(pdf_info['pages']))
                 
                 # Mostrar los resultados en una nueva ventana
                 self.show_json_table(json_data)
                 
                 # Mover el archivo a la carpeta Done
-                smbclient.rename(pdf_info['full_path'],Path(pdf_info['folder_path']) / "Done" / f"{uuid.uuid4()}.pdf")
+                # smbclient.rename(pdf_info['full_path'],Path(pdf_info['folder_path']) / "Done" / f"{uuid.uuid4()}.pdf")
                 
                 # Actualizar la lista
                 self.pdf_data.pop(selected_row)
@@ -135,7 +139,6 @@ class PDFMonitorGUI(QMainWindow):
 
     def show_json_table(self, json_data):
         """Muestra los datos JSON en una nueva ventana"""
-        
         self.json_window = Json_table(json_data)
         self.json_window.setWindowModality(Qt.WindowModal)  # Modal respecto a la ventana principal
         self.json_window.show()
@@ -171,6 +174,8 @@ class PDFMonitorGUI(QMainWindow):
                         # Verificar si ya está en nuestra lista
                         if not any(p['full_path'] == doc_path for p in self.pdf_data):
                             if self.wait_doc(doc_path, 5, 5):
+                                lector_pdf = PdfReader(doc_path)
+                                length_pdf = len(lector_pdf.pages)
                                 # Agregar a la lista de PDFs
                                 pdf_info = {
                                     'name': doc,
@@ -178,12 +183,11 @@ class PDFMonitorGUI(QMainWindow):
                                     'date_added': time.strftime("%Y-%m-%d %H:%M:%S"),
                                     'full_path': doc_path,
                                     'folder_path': folder,
-                                    'option': folder_name
+                                    'option': folder_name,
+                                    'pages': str(length_pdf)
                                 }
-                                
                                 self.pdf_data.append(pdf_info)
                                 self.update_pdf_list()
-                                
                 time.sleep(10)
             except Exception as e:
                 print(f"Error en monitor_folder: {e}")

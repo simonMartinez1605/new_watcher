@@ -1,6 +1,309 @@
 
 [
     {
+        "doc_type":"Defensive_receipt_2023", 
+        "anchor":"Defensive",
+        "first_coords":[
+            {
+                "x": -5,
+                "y": 0,
+                "w": 218,
+                "h": 50
+            }
+
+        ],
+        "first_key_word":["sive"],
+        "second_coords":[
+            {
+                "x": -736,
+                "y": -70,
+                "w": 91,
+                "h": 35
+            }
+        ],
+        "second_key_words":{
+            "2023": "Defensive_receipt_2023", 
+            "23": "Defensive_receipt_2023"
+        },
+        "except_coords":[
+            {
+                "x": 1,
+                "y": 1,
+                "w": 218,
+                "h": 24
+            }
+        ], 
+        "except_key_words":{
+            "defensive": "Defensive_receipt_2023",
+            "Receipt": "Defensive_receipt_2023",
+            "Notice": "Defensive_receipt_2023", 
+            "Keceipt": "Defensive_receipt_2023",
+            "Vefensive": "Defensive_receipt_2023",
+            "sive": "Defensive_receipt_2023"
+        }
+    },
+    {
+        "doc_type":"Evidence_notice_1",
+        "anchor":"Evidence",
+        "first_coords":[
+            {
+                "x": -188,
+                "y": 51,
+                "w": 65,
+                "h": 24
+            }
+        ],
+        "first_key_word":["Asylum"], 
+        "second_coords":[
+            {
+                "x": 50,
+                "y": 28,
+                "w": 67,
+                "h": 28
+            }
+        ],
+        "second_key_words":{
+            "Waiver": "Evidence_notice_1"
+        },
+        "except_coords":[
+            {
+                "x": 0,
+                "y": 0,
+                "w": 185,
+                "h": 29
+            }
+        ],
+        "except_key_words":{
+            "Evidence": "Evidence_notice_1", 
+            "Notice:": "Evidence_notice_1"
+        }
+    },
+    {
+        "doc_type":"Evidence_notice_2", 
+        "anchor":"(Printed",
+        "first_coords":[
+            {
+                "x": -509,
+                "y": 1,
+                "w": 75,
+                "h": 21
+            }
+        ],
+        "first_key_word":["sign"], 
+        "second_coords":[
+            {
+                "x": -517,
+                "y": 99,
+                "w": 60,
+                "h": 28
+            }
+        ],
+        "second_key_words":{
+            "date": "Evidence_notice_2", 
+            "Dat": "Evidence_notice_2"
+        },
+        "except_coords":[
+            {
+                "x": 0,
+                "y": 0,
+                "w": 180,
+                "h": 43
+            }
+        ],
+        "except_key_words":{
+            "Printed": "Evidence_notice_2",
+            "Print": "Evidence_notice_2"
+        }
+    },
+    {
+        "doc_type":"Interview_Waiver",
+        "anchor":"Waiver",
+        "first_coords":[
+            {
+                "x": -82,
+                "y": 0,
+                "w": 81,
+                "h": 34
+            }
+        ], 
+        "first_key_word":["Interview"],
+        "second_coords":[
+            {
+                "x": 0,
+                "y": 0,
+                "w": 150,
+                "h": 80
+            }
+        ],
+        "second_key_words":{
+            "Waiver": "Interview_Waiver_1", 
+            "Interview": "Interview_Waiver_1"
+        }, 
+        "except_coords":[
+            {
+                "x": -332,
+                "y": -82,
+                "w": 196,
+                "h": 21
+            },
+            {
+                "x": -276,
+                "y": -100,
+                "w": 104,
+                "h": 21
+            }
+        ],
+        "except_key_words":{
+            "Waiver": "Interview_Waiver_1",
+            "Interview": "Interview_Waiver_1",
+            "Name": "Interview_Waiver_1",
+            "AlienNumber": "Interview_Waiver_1"
+        }
+    },
+    {
+        "doc_type":"Interview_Waiver_2", 
+        "anchor":"(Printed",
+        "first_coords":[
+            {
+                "x": -509,
+                "y": 1,
+                "w": 75,
+                "h": 21
+            }
+        ],
+        "first_key_word":["sign"], 
+        "second_coords":[
+            {
+                "x": -517,
+                "y": 99,
+                "w": 60,
+                "h": 28
+            }
+        ],
+        "second_key_words":{
+            "date": "Interview_Waiver_2", 
+            "Dat": "Interview_Waiver_2"
+        },
+        "except_coords":[
+            {
+                "x": 0,
+                "y": 0,
+                "w": 180,
+                "h": 43
+            }
+        ],
+        "except_key_words":{
+            "Printed": "Interview_Waiver_2",
+            "Print": "Interview_Waiver_2"
+        }
+    },
+    {
+        "doc_type":"Lack_notice",
+        "anchor":"Lack",
+        "first_coords":[
+            {
+                "x": -220,
+                "y": 0,
+                "w": 364,
+                "h": 60
+            }
+        ],
+        "first_key_word":["Notice"],
+        "second_coords":[
+            {
+                "x": 110,
+                "y": 0,
+                "w": 200,
+                "h": 60
+            }
+        ],
+        "second_key_words":{
+            "Jurisdiction": "Lack_notice"
+        },
+        "except_coords":[
+            {
+                "x": 309,
+                "y": -326,
+                "w": 106,
+                "h": 21
+            }
+        ],
+        "except_key_words":{
+            "Jurisdiction": "Lack_notice"
+        }
+    },
+    {
+        "doc_type":"Notice",
+        "anchor":"Please",
+        "first_coords":[
+            {
+                "x": 15,
+                "y": 157,
+                "w": 57,
+                "h": 60
+            }
+        ],
+        "first_key_word":["(Time)"],
+        "second_coords":[
+            {
+                "x": 15,
+                "y": 90,
+                "w": 80,
+                "h": 60
+            }
+        ],
+        "second_key_words":{
+            "Notice": "(Data)"
+        },
+        "except_coords":[
+            {
+                "x": -546,
+                "y": 221,
+                "w": 58,
+                "h": 43
+            }
+        ],
+        "except_key_words":{
+            "Off": "Notice",
+            "Official": "Notice"
+        }
+    },
+    {
+        "doc_type": "Receipt_2023", 
+        "anchor":"Receipt",
+        "first_coords":[
+            {
+                "x": -112,
+                "y": -3,
+                "w": 111,
+                "h": 35
+            }
+        ], 
+        "first_key_word":["Receipt"], 
+        "second_coords":[
+            {
+                "x": -741,
+                "y": -36,
+                "w": 83,
+                "h": 31
+            }
+        ], 
+        "second_key_words":{
+            "2023": "Receipt_2023"
+        }, 
+        "except_coords":[
+                {
+                "x": -40,
+                "y": -116,
+                "w": 70,
+                "h": 27
+            }
+        ], 
+        "except_key_words":{
+            "asylum": "Receipt_2023"
+        }
+    },
+    {
         "doc_type": "Receipts Asylum", 
         "anchor":"Page", 
         "first_coords":[
@@ -148,7 +451,8 @@
             "Applicant": "Defensive_receipt_2019", 
             "2021": "Defensive_receipt_2020",
             "2020": "Defensive_receipt_2020",
-            "2019": "Defensive_receipt_2019"
+            "2019": "Defensive_receipt_2019", 
+            "589": "Defensive_receipt_2020"
         }, 
         "except_coords":[
             {
@@ -169,7 +473,8 @@
             "Applicant": "Defensive_receipt_2019", 
             "2021": "Defensive_receipt_2020",
             "2020": "Defensive_receipt_2020",
-            "2019": "Defensive_receipt_2019"
+            "2019": "Defensive_receipt_2019", 
+            "589": "Defensive_receipt_2020"
         }
     },
     {
@@ -193,7 +498,7 @@
             }
         ],
         "second_key_words": {
-            "589": "Reused",
+            
             "CASE": "Reused"
         },
         "except_coords": [

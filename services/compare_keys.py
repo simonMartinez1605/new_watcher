@@ -1,6 +1,6 @@
 from fuzzywuzzy import fuzz
 
-def find_similar_key(current_key, pending_merges, threshold=75):
+def find_similar_key(current_key, pending_merges, threshold=70):
     """
     Find a similar key in the pending merges list based on a similarity threshold.
 

@@ -7,10 +7,10 @@ import traceback
 import pytesseract
 import numpy as np
 from io import BytesIO
-from PyPDF2 import PdfWriter
 from dotenv import load_dotenv
 from models.models import Model
 from PIL import Image, ImageFilter
+from PyPDF2 import PdfWriter, PdfReader
 from pdf2image import convert_from_path
 from services.deskewing import deskew_image
 from services.compare_keys import find_similar_key
@@ -89,7 +89,7 @@ def search_in_doc_optimized(page, name_doc: str, type_data: str, json_type: str)
     if not model:
         return None
         
-    json_path = f"jsons/{json_type}.json"  # Ajusta la ruta
+    json_path = f"jsons/{json_type}.json"
     json_result = load_json_cached(json_path)
     
     # Búsqueda más eficiente
@@ -104,7 +104,7 @@ def search_in_doc_optimized(page, name_doc: str, type_data: str, json_type: str)
             coord['width'], coord['height'], 
             key_word
         )
-        if result and 8 < len(result) < 170:
+        if result and 1 < len(result) < 170:
             return result
     return None
 
@@ -128,6 +128,25 @@ def save_and_ocr_optimized(result, processed_path, option, pdf_save):
         print(f"❌ Error guardando PDF individual: {e}")
         return None
     
+def copy_pdf(input_path, output_path):
+    """Copia un PDF de input_path a output_path"""
+    try:
+        reader = PdfReader(input_path)
+        writer = PdfWriter()
+
+        for page in reader.pages:
+            writer.add_page(page)
+
+        with open(output_path, "wb") as output_file: 
+            writer.write(output_file)
+
+        return output_file
+
+    except Exception as e:
+        print(f"❌ Error al copiar el PDF: {e}")
+        return False
+    
+
 def merge_pages(images, result, processed_path, option, pages_number=None):
     try:
         output_pdf_path = os.path.join(processed_path, f"{result['name']}.pdf")
@@ -152,16 +171,23 @@ def merge_pages(images, result, processed_path, option, pages_number=None):
 
         return {
             "name": regex_name(result['name']),
+            "pl": result['pl'],
+            "pdf": output_pdf_path,
+            "case_type": result['case_type'],
+            "folder_name": option
+        }
+        return {
+            "name": regex_name(result['name']),
             "alien_number": regex_alien_number(result['alien_number']),
             "pdf": output_pdf_path,
-            "doc_type": result.get('doc_type'),
+            "doc_type": result['doc_type'],
             "folder_name": option
         }
     except Exception as e:
         print(f"❌ Error guardando PDF combinado (imágenes): {e}")
         return None
 
-def exect_funct_optimized(doc_type, page, option, processed_path, json_type, save_pdf):
+def exect_funct_optimized(doc_type, page, option, processed_path, json_type, save_pdf, pages_length=None):
     try:
         doc_config = {
             "42BReceipts": {
@@ -172,6 +198,14 @@ def exect_funct_optimized(doc_type, page, option, processed_path, json_type, sav
                 "Reused": ("Reused_42B", 1, "Reused", "page1"),
             },
             "Asylum": {
+                "Lack_notice": ("Lack_notice", 1, "Lack_notice", "page1"),
+                "Notice1": ("Notice1", 1, "Notice", "page2"),
+                "Evidence_notice_1": ("Evidence_notice_1", 2, "Evidence_notice", "page1"),
+                "Evidence_notice_2": ("Evidence_notice_2", 2, "Evidence_notice", "page2"),
+                "Interview_Waiver_1": ("Interview_Waiver_1", 2, "Interview_Waiver", "page1"),
+                "Interview_Waiver_2": ("Interview_Waiver_2", 2, "Interview_Waiver", "page2"),
+                "Receipt_2023":("Receipt_2023", 1, "Receipt", "page1"),
+                "Receipt": ("Receipt", 1, "Receipts", "page1"),
                 "Receipts1": ("Receipts_Asylum", 2, "Receipts", "page1"),
                 "Receipts2": ("Receipts_Asylum", 2, "Receipts", "page2"),
                 "Appointment": ("Appointment_asylum", 1, "Appointment", "page1"),
@@ -182,14 +216,17 @@ def exect_funct_optimized(doc_type, page, option, processed_path, json_type, sav
                 "Approved_receipts": ("Approved_cases_asylum", 1, "Approved_receipts", "page1"),
                 "Payment_receipt": ("Asylum_receipt", 1, "Payment_receipt", "page1"),
                 "Defensive_receipt_2024": ("Defensive_receipt_2024", 1, "Defensive_receipt", "page1"),
+                "Defensive_receipt_2023": ("Defensive_receipt_2023", 1, "Defensive_receipt", "page1"),
                 "Defensive_receipt_2020": ("Defensive_receipt_2020", 1, "Defensive_receipt", "page1"),
                 "Defensive_receipt_2019":("Defensive_receipt_2019", 1, "Defensive_receipt", "page1"),
                 "Application_to_asylum": ("Application_to_asylum", 1, "Application_to_asylum", "page1"),
                 "Reused": ("Reused_asylum", 1, "Reused", "page1"),
                 "Reused_2018":("Reused_2018", 1, "Reused", "page1"),
                 "Reject": ("Reject", 1, "Reject", "page1"),
-                "Reject_2020": ("Reject_2020", 1, "Reject", "page1"),
-                "Receipt": ("Receipt", 1, "Receipts", "page1")
+                "Reject_2020": ("Reject_2020", 1, "Reject", "page1")
+            }, 
+            "FamilyClosedCases": {
+                "Family":("Family", 3, "Family", "page1"),
             }
         }
 
@@ -197,14 +234,46 @@ def exect_funct_optimized(doc_type, page, option, processed_path, json_type, sav
         if not config:
             print(f"❌ Tipo de documento no reconocido: {doc_type}")
             result = {"name": f"{uuid.uuid4()}", "alien_number": f"{random.randint(1,10000)}", "doc_type": f"{uuid.uuid4()}", "folder_name":option}
-            return save_and_ocr_optimized(result, processed_path, option, save_pdf)
+            # return save_and_ocr_optimized(result, processed_path, option, save_pdf)
+
+        if option == "FamilyClosedCases":
+            
+            name = search_in_doc_optimized(page, "Family", "name", option) or str(uuid.uuid4())
+            case_type = search_in_doc_optimized(page, "Family", "case_type", option) or f"{uuid.uuid4()}"
+            pysical_location = search_in_doc_optimized(page, "Family", "pl", option) or f"{uuid.uuid4()}"
+
+            print(pysical_location)
+
+            key = "FamlyClosedCases"
+
+            pending_merges.setdefault(key, {
+                "pages": [], 
+                "meta":{"name": name, "case_type": case_type, "pl": pysical_location},
+                "pages_number": []
+            })
+
+            pending_merges[key]["pages"].append(page)
+
+            if len(pending_merges[key]['pages']) == pages_length:
+                merged = merge_pages(
+                    pending_merges[key]["pages"],
+                    pending_merges[key]["meta"],
+                    processed_path,
+                    option,
+                    pending_merges[key]["pages_number"]
+                )
+
+                del pending_merges[key]
+                return merged
 
         type_name, sheets_quantity, kind_of_doc, page_number = config
+
         name = search_in_doc_optimized(page, type_name, "name", option) or str(uuid.uuid4())
+
         alien_number = search_in_doc_optimized(page, type_name, "a_number", option) or f"A{random.randint(1, 10000)}"
         
         key = f"{name}_{sheets_quantity}_{kind_of_doc}"
-        
+
         if sheets_quantity > 1:
             # Buscar si ya hay una key similar
             similar_key = find_similar_key(key, pending_merges)
@@ -221,9 +290,16 @@ def exect_funct_optimized(doc_type, page, option, processed_path, json_type, sav
 
             # Añadimos la página
             pending_merges[used_key]["pages"].append(page)
-            pending_merges[used_key]["pages_number"].append(page_number)
+            if pending_merges[used_key]['pages_number'] != []:
+                for page_info in pending_merges[used_key]['pages_number']:
+                    if page_info != page_number:
+                        pending_merges[used_key]["pages_number"].append(page_number)
+
+            else: 
+                pending_merges[used_key]["pages_number"].append(page_number)
 
             if len(pending_merges[used_key]['pages']) == sheets_quantity:
+                # print(f"Name: {pending_merges[used_key]['name']}")
                 merged = merge_pages(
                     pending_merges[used_key]["pages"],
                     pending_merges[used_key]["meta"],
@@ -233,6 +309,7 @@ def exect_funct_optimized(doc_type, page, option, processed_path, json_type, sav
                 )
                 del pending_merges[used_key]
                 return merged
+            
         else: 
             result = {
                 "name": name,
@@ -251,7 +328,7 @@ def exect_funct_optimized(doc_type, page, option, processed_path, json_type, sav
         traceback.print_exc()
         return None
 
-def process_single_page(page, option, processed_path, json_type):
+def process_single_page(page, pages_length, option, processed_path, json_type):
     """Procesa una página individual con su propio PdfWriter"""
     try:
         pdf_save = PdfWriter()  # Nuevo PdfWriter para cada página
@@ -267,6 +344,7 @@ def process_single_page(page, option, processed_path, json_type):
         classification_functions = {
             "42BReceipts": model.find_receipts,
             "Asylum": model.find_receipts_asylum,
+            "FamilyClosedCases": model.find_family_closed_cases
         }
         
         classify_func = classification_functions.get(option)
@@ -275,25 +353,25 @@ def process_single_page(page, option, processed_path, json_type):
             return None
         
         doc_type = classify_func()
-        
+
         if not doc_type:
             print(f"⚠️ The system can't index document in the {option} folder")
-            return exect_funct_optimized("Error", page, option, processed_path, json_type, pdf_save)
+            return exect_funct_optimized("Error", page, option, processed_path, json_type, pdf_save, pages_length)
 
-        return exect_funct_optimized(doc_type, page, option, processed_path, json_type, pdf_save)
+        return exect_funct_optimized(doc_type, page, option, processed_path, json_type, pdf_save, pages_length)
         
     except Exception as e:
         print(f"❌ Error to page process: {e}")
         traceback.print_exc()
         return None
 
-def process_pages_parallel(pages, option, processed_path, json_type):
+def process_pages_parallel(pages, pages_length, option, processed_path, json_type):
     """Procesa páginas en paralelo, cada una con su propio PDF"""
     results = []
     with ThreadPoolExecutor(max_workers=os.cpu_count() - 2) as executor:
         futures = [executor.submit(
             process_single_page, 
-            page, option, processed_path, json_type
+            page, pages_length, option, processed_path, json_type
         ) for page in pages]
         
         for future in as_completed(futures):
@@ -302,7 +380,7 @@ def process_pages_parallel(pages, option, processed_path, json_type):
                 results.append(result)
     return results
 
-def optimized_indexing(pdf: str, option: str, input_path: str, processed_path: str):
+def optimized_indexing(pdf: str, option: str, input_path: str, processed_path: str, pages_length: int = None):
     """Versión optimizada de la función principal"""
     try:
         pdf_path = os.path.join(input_path, pdf)
@@ -315,7 +393,7 @@ def optimized_indexing(pdf: str, option: str, input_path: str, processed_path: s
             poppler_path=r'C:\Users\simon\Downloads\Release-24.08.0-0\poppler-24.08.0\Library\bin'
         )
         
-        results = process_pages_parallel(pages, option, processed_path, option)
+        results = process_pages_parallel(pages, pages_length, option, processed_path, option)
         
         shutil.move(pdf_path, os.path.join(processed_path, pdf))
         return [r for r in results if r is not None]

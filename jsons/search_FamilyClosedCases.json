@@ -1,0 +1,37 @@
+[
+    {
+        "doc_type": "FamilyClosedCases",
+        "anchor": "FAMILY",
+        "first_coords": [
+            {
+                "x": -250,
+                "y": 700,
+                "w": 196,
+                "h": 200
+            }
+        ],
+        "first_key_word": ["CASE", "CASES"],
+        "second_coords": [
+            {
+                "x": -250,
+                "y": 302,
+                "w": 200,
+                "h": 200
+            }
+        ],
+        "second_key_words": {
+            "CLIENT": "Family"
+        },
+        "except_coords": [
+            {
+                "x": -50,
+                "y": 569,
+                "w": 81,
+                "h": 60
+            }
+        ],
+        "except_key_words": {
+            "TYPE": "Family"
+        }
+    }
+]

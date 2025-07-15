@@ -1,0 +1,30 @@
+[
+    {
+        "pdf":"Family",
+        "name":[
+            {
+                "x": 89,
+                "y": 313,
+                "width": 850,
+                "height": 200
+            }
+        ],
+        "case_type":[
+            {
+                "x": 70,
+                "y": 705,
+                "width": 350,
+                "height": 200
+            }
+        ],
+        "pl": [
+            {
+                "x": -120,
+                "y": 900,
+                "width": 150,
+                "height": 200
+            }
+        ],
+        "key_word":"FAMILY"
+    }
+]
