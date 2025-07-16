@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from shareplum import Office365
 from shareplum.site import Version
 
-load_dotenv()
+load_dotenv(override=True)
 
 sharepoint_url = os.getenv('SHARE_POINT_URL')
 username = os.getenv('USER_NAME')

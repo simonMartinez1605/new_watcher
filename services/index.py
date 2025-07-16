@@ -18,7 +18,7 @@ from errors.errors import regex_name, regex_alien_number
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Cargar variables de entorno
-load_dotenv()
+load_dotenv(override=True)
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 # Configuración global
@@ -28,6 +28,7 @@ pending_merges = {}
 
 def load_json_cached(file_path: str) -> dict:
     """Carga JSON con caché para evitar lecturas repetidas de disco"""
+    print(file_path)
     if file_path not in _JSON_CACHE:
         with open(file_path, 'r', encoding='utf-8') as f:
             _JSON_CACHE[file_path] = json.load(f)
@@ -89,7 +90,7 @@ def search_in_doc_optimized(page, name_doc: str, type_data: str, json_type: str)
     if not model:
         return None
         
-    json_path = f"jsons/{json_type}.json"
+    json_path = fr"C:\Users\simon\OneDrive\Documents\Simon\Python\new_watcher\jsons\{json_type}.json"
     json_result = load_json_cached(json_path)
     
     # Búsqueda más eficiente

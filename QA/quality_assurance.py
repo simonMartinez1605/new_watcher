@@ -286,7 +286,6 @@ class Json_table(QWidget):
                     ocr(data['pdf'])
                     folder_metadata = {
                         "PL": data['pl'],
-                        "Case_x0020_type": data['case_type'],
                     }
                     metadata_dict = {
                         "PL": data['pl'],

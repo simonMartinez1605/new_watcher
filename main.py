@@ -1,6 +1,6 @@
 import os
+import sys
 import time
-import uuid
 import threading
 import smbclient
 from pathlib import Path
@@ -13,9 +13,20 @@ from QA.quality_assurance import Json_table
 from services.index import optimized_indexing as indexing
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget, QHeaderView, QLabel, QPushButton)
 
-load_dotenv()
+
+def get_base_path(): 
+    if hasattr(sys, '_MEIPASS'):
+        return Path(sys._MEIPASS)
+    else: 
+        return os.path.abspath(os.path.dirname(__file__))
+    
+dotenv_path = os.path.join(get_base_path(), '.env')
+
+load_dotenv(dotenv_path=dotenv_path)
 
 path_share_folder = os.getenv('PATH_SHARE_FOLDER')
+
+print(f"Path to share folder: {path_share_folder}")
 
 console = Console()
 
@@ -120,6 +131,7 @@ class PDFMonitorGUI(QMainWindow):
             QApplication.processEvents()  # Actualiza la UI inmediatamente
             
             try:
+                print(os.path.exists(fr"C:\Users\simon\OneDrive\Documents\Simon\Python\new_watcher\jsons\FamilyClosedCases.json"))
                 # Ejecutar la función de indexing
                 json_data = indexing(pdf_info['full_path'], pdf_info['option'], pdf_info['folder_path'], Path(pdf_info['folder_path']) / "Process", int(pdf_info['pages']))
                 
