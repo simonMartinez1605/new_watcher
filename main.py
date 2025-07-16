@@ -1,5 +1,6 @@
 import os
 import sys
+import uuid
 import time
 import threading
 import smbclient
