@@ -14,7 +14,6 @@ from QA.quality_assurance import Json_table
 from services.index import optimized_indexing as indexing
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QTableWidget, QTableWidgetItem, QVBoxLayout, QWidget, QHeaderView, QLabel, QPushButton)
 
-
 def get_base_path(): 
     if hasattr(sys, '_MEIPASS'):
         return Path(sys._MEIPASS)
@@ -27,7 +26,7 @@ load_dotenv(dotenv_path=dotenv_path)
 
 path_share_folder = os.getenv('PATH_SHARE_FOLDER')
 
-print(f"Path to share folder: {path_share_folder}")
+# print(f"Path to share folder: {path_share_folder}")
 
 console = Console()
 
@@ -39,6 +38,7 @@ folders_to_monitor = [
     # rf"\\{path_share_folder}\Asylum",
     # rf"\\{path_share_folder}\42BReceipts",
     rf"\\{path_share_folder}\FamilyClosedCases",
+    # rf"\\{path_share_folder}\Testing",
 ]
 
 class PDFMonitorGUI(QMainWindow):
@@ -132,7 +132,6 @@ class PDFMonitorGUI(QMainWindow):
             QApplication.processEvents()  # Actualiza la UI inmediatamente
             
             try:
-                print(os.path.exists(fr"C:\Users\simon\OneDrive\Documents\Simon\Python\new_watcher\jsons\FamilyClosedCases.json"))
                 # Ejecutar la función de indexing
                 json_data = indexing(pdf_info['full_path'], pdf_info['option'], pdf_info['folder_path'], Path(pdf_info['folder_path']) / "Process", int(pdf_info['pages']))
                 
@@ -140,7 +139,7 @@ class PDFMonitorGUI(QMainWindow):
                 self.show_json_table(json_data)
                 
                 # Mover el archivo a la carpeta Done
-                smbclient.rename(pdf_info['full_path'],Path(pdf_info['folder_path']) / "Done" / f"{uuid.uuid4()}.pdf")
+                # smbclient.rename(pdf_info['full_path'],Path(pdf_info['folder_path']) / "Done" / f"{uuid.uuid4()}.pdf")
                 
                 # Actualizar la lista
                 self.pdf_data.pop(selected_row)

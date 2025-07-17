@@ -1,5 +1,6 @@
 import os
 import uuid
+import sys
 import json
 import shutil
 import random
@@ -7,6 +8,7 @@ import traceback
 import pytesseract
 import numpy as np
 from io import BytesIO
+from pathlib import Path
 from dotenv import load_dotenv
 from models.models import Model
 from PIL import Image, ImageFilter
@@ -17,18 +19,45 @@ from services.compare_keys import find_similar_key
 from errors.errors import regex_name, regex_alien_number
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-# Cargar variables de entorno
-load_dotenv(override=True)
+def get_base_path(): 
+    if hasattr(sys, '_MEIPASS'):
+        return Path(sys._MEIPASS)
+    else: 
+        return os.path.abspath(os.path.dirname(__file__))
+    
+dotenv_path = os.path.join(get_base_path(), '.env')
+
+load_dotenv(dotenv_path=dotenv_path)
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+
 # Configuración global
 _JSON_CACHE = {}
 
 pending_merges = {}
 
+data = {}
+
+#Cargar variables de entorno
+
+def resource_path(relative_path: str) -> str:
+    """Obtiene la ruta absoluta de un recurso relativo"""
+    try: 
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
+# print(f"JSON file path: {json_file_path}")
+
+proyect_path = os.path.abspath("jsons")
+
+# print(f"Project path: {proyect_path}")
+
 def load_json_cached(file_path: str) -> dict:
     """Carga JSON con caché para evitar lecturas repetidas de disco"""
-    print(file_path)
+    # print(file_path)
     if file_path not in _JSON_CACHE:
         with open(file_path, 'r', encoding='utf-8') as f:
             _JSON_CACHE[file_path] = json.load(f)
@@ -89,9 +118,21 @@ def search_in_doc_optimized(page, name_doc: str, type_data: str, json_type: str)
     model = process_page_optimized(page)
     if not model:
         return None
+    
+    json_file_path = resource_path(f"{json_type}.json")
+
+    verify_path = os.path.exists(json_file_path)
+
+    print(f"Verify path: {verify_path}: {json_file_path}")
+
+    if verify_path == False:
+        json_file_path = resource_path(f"{proyect_path}")
+        json_file_path = fr"{json_file_path}\{json_type}.json"
+        print(f"JSON file path: {json_file_path}")
         
-    json_path = fr"C:\Users\simon\OneDrive\Documents\Simon\Python\new_watcher\jsons\{json_type}.json"
-    json_result = load_json_cached(json_path)
+    # json_path = fr"{json_file_path}\{json_type}.json"
+
+    json_result = load_json_cached(json_file_path)
     
     # Búsqueda más eficiente
     matching_doc = next((doc for doc in json_result if doc["pdf"] == name_doc), None)
@@ -239,26 +280,36 @@ def exect_funct_optimized(doc_type, page, option, processed_path, json_type, sav
 
         if option == "FamilyClosedCases":
             
-            name = search_in_doc_optimized(page, "Family", "name", option) or str(uuid.uuid4())
+            name = search_in_doc_optimized(page, "Family", "name", option) or "None"
             case_type = search_in_doc_optimized(page, "Family", "case_type", option) or f"{uuid.uuid4()}"
-            pysical_location = search_in_doc_optimized(page, "Family", "pl", option) or f"{uuid.uuid4()}"
-
-            print(pysical_location)
+            pysical_location = search_in_doc_optimized(page, "Family", "pl", option) or f"None"
 
             key = "FamlyClosedCases"
 
             pending_merges.setdefault(key, {
                 "pages": [], 
-                "meta":{"name": name, "case_type": case_type, "pl": pysical_location},
                 "pages_number": []
             })
+
+            if name != "None" and case_type != "None":
+                data["name"] = regex_name(name)
+                data["pl"] = pysical_location
+                data["case_type"] = case_type
+                pending_merges[key]["pages_number"].append("page0")
+            
+            length_pages = len(pending_merges[key]["pages_number"])
+
+            pending_merges[key]["pages_number"].append(f"page{length_pages + 1}")
 
             pending_merges[key]["pages"].append(page)
 
             if len(pending_merges[key]['pages']) == pages_length:
+
+                print(f"Name: {data['name']}, PL: {data['pl']}, Case Type: {data['case_type']}")
+
                 merged = merge_pages(
                     pending_merges[key]["pages"],
-                    pending_merges[key]["meta"],
+                    data,
                     processed_path,
                     option,
                     pending_merges[key]["pages_number"]
@@ -267,58 +318,59 @@ def exect_funct_optimized(doc_type, page, option, processed_path, json_type, sav
                 del pending_merges[key]
                 return merged
 
-        type_name, sheets_quantity, kind_of_doc, page_number = config
+        # type_name, sheets_quantity, kind_of_doc, page_number = config
 
-        name = search_in_doc_optimized(page, type_name, "name", option) or str(uuid.uuid4())
+        # name = search_in_doc_optimized(page, type_name, "name", option) or str(uuid.uuid4())
 
-        alien_number = search_in_doc_optimized(page, type_name, "a_number", option) or f"A{random.randint(1, 10000)}"
+        # alien_number = search_in_doc_optimized(page, type_name, "a_number", option) or f"A{random.randint(1, 10000)}"
         
-        key = f"{name}_{sheets_quantity}_{kind_of_doc}"
+        # key = f"{name}_{sheets_quantity}_{kind_of_doc}"
 
-        if sheets_quantity > 1:
-            # Buscar si ya hay una key similar
-            similar_key = find_similar_key(key, pending_merges)
+        # if sheets_quantity > 1:
+        #     # 
+        #     # Buscar si ya hay una key similar
+        #     similar_key = find_similar_key(key, pending_merges)
 
-            # Usar la key similar o la original
-            used_key = similar_key if similar_key else key
+        #     # Usar la key similar o la original
+        #     used_key = similar_key if similar_key else key
 
-            # Si no existe, inicializamos
-            pending_merges.setdefault(used_key, {
-                "pages": [],
-                "meta": {"name": name, "alien_number": alien_number, "doc_type": kind_of_doc}, 
-                "pages_number": []
-            })
+        #     # Si no existe, inicializamos
+        #     pending_merges.setdefault(used_key, {
+        #         "pages": [],
+        #         "meta": {"name": name, "alien_number": alien_number, "doc_type": kind_of_doc}, 
+        #         "pages_number": []
+        #     })
 
-            # Añadimos la página
-            pending_merges[used_key]["pages"].append(page)
-            if pending_merges[used_key]['pages_number'] != []:
-                for page_info in pending_merges[used_key]['pages_number']:
-                    if page_info != page_number:
-                        pending_merges[used_key]["pages_number"].append(page_number)
+        #     # Añadimos la página
+        #     pending_merges[used_key]["pages"].append(page)
+        #     if pending_merges[used_key]['pages_number'] != []:
+        #         for page_info in pending_merges[used_key]['pages_number']:
+        #             if page_info != page_number:
+        #                 pending_merges[used_key]["pages_number"].append(page_number)
 
-            else: 
-                pending_merges[used_key]["pages_number"].append(page_number)
+        #     else: 
+        #         pending_merges[used_key]["pages_number"].append(page_number)
 
-            if len(pending_merges[used_key]['pages']) == sheets_quantity:
-                # print(f"Name: {pending_merges[used_key]['name']}")
-                merged = merge_pages(
-                    pending_merges[used_key]["pages"],
-                    pending_merges[used_key]["meta"],
-                    processed_path,
-                    option, 
-                    pending_merges[used_key]["pages_number"]
-                )
-                del pending_merges[used_key]
-                return merged
+        #     if len(pending_merges[used_key]['pages']) == sheets_quantity:
+        #         # print(f"Name: {pending_merges[used_key]['name']}")
+        #         merged = merge_pages(
+        #             pending_merges[used_key]["pages"],
+        #             pending_merges[used_key]["meta"],
+        #             processed_path,
+        #             option, 
+        #             pending_merges[used_key]["pages_number"]
+        #         )
+        #         del pending_merges[used_key]
+        #         return merged
             
-        else: 
-            result = {
-                "name": name,
-                "alien_number": alien_number,
-                "doc_type": kind_of_doc,
-                "folder_name": option
-            }
-            return save_and_ocr_optimized(result, processed_path, option, save_pdf)
+        # else: 
+        #     result = {
+        #         "name": name,
+        #         "alien_number": alien_number,
+        #         "doc_type": kind_of_doc,
+        #         "folder_name": option
+        #     }
+        #     return save_and_ocr_optimized(result, processed_path, option, save_pdf)
         
     except Exception as e:
         print(f"❌ Error en exect_funct_optimized: {e}")
