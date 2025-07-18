@@ -209,8 +209,10 @@ def save_single_page_pdf(image: Image.Image, result_meta: dict, processed_path: 
         traceback.print_exc()
         return None
 
+import io # You'll need this import
+
 def merge_pages_to_pdf(images: list[Image.Image], result_meta: dict, processed_path: Path, option: str, pages_number: list[str] = None) -> dict | None:
-    """Fusiona múltiples imágenes en un solo PDF.
+    """Fusiona múltiples imágenes en un solo PDF, optimizando el tamaño del archivo.
     
     Args:
         images (list[Image.Image]): Lista de imágenes PIL a fusionar.
@@ -231,7 +233,6 @@ def merge_pages_to_pdf(images: list[Image.Image], result_meta: dict, processed_p
             paired = list(zip(pages_number, images))
             def extract_page_num(p_str):
                 try:
-                    # Extracts number from "pageX" or "page_X"
                     return int(''.join(filter(str.isdigit, p_str)))
                 except ValueError:
                     return float('inf') 
@@ -245,8 +246,19 @@ def merge_pages_to_pdf(images: list[Image.Image], result_meta: dict, processed_p
             print("No images to merge.")
             return None
 
-        # Save the PDF
-        ordered_images[0].save(output_pdf_path, save_all=True, append_images=ordered_images[1:])
+        # --- CAMBIO CLAVE AQUÍ: Aplicar compresión JPEG al guardar el PDF ---
+        # Guardar la primera imagen con compresión. Las imágenes subsiguientes
+        # se adjuntarán usando la misma lógica de compresión de imagen interna.
+        # Experimenta con el valor 'quality' (por ejemplo, 75, 85, 90).
+        ordered_images[0].save(
+            output_pdf_path, 
+            save_all=True, 
+            append_images=ordered_images[1:], 
+            # density= (optional, if you want to set output DPI here,
+            # but usually better to control in convert_from_path)
+            quality=65 # <-- Nivel de calidad JPEG (ej. 75-90)
+        )
+        # ------------------------------------------------------------------
 
         return {
             "name": regex_name(result_meta.get('name', '')),
@@ -422,7 +434,7 @@ def optimized_indexing(pdf_filename, option, input_path, processed_path, pages: 
         pages_pil_images = convert_from_path(
             str(pdf_filename),
             thread_count=os.cpu_count(), # Use all CPU cores for conversion
-            dpi=150,
+            dpi=80,
             grayscale=True,
             poppler_path=fr"{poppler_path}\bin" # IMPORTANT: Update this path!
         )
@@ -437,15 +449,6 @@ def optimized_indexing(pdf_filename, option, input_path, processed_path, pages: 
             current_pdf_page_numbers = []
 
             for i, page_image in enumerate(pages_pil_images):
-                # if not model:
-                #     continue
-
-                # Classify (should always be "Family" if option is "FamilyClosedCases")
-                # doc_type = model.find_family_closed_cases()
-                # if not doc_type:
-                #     print(f"⚠️ Page {i+1} of {pdf_filename}: Could not classify as FamilyClosedCases. Skipping for merge.")
-                #     continue
-
                 # Search for metadata on each page
                 if i == 0:  # Only set metadata on the first page
                     print(f"Processing FamilyClosedCases PDF: {pdf_filename}")

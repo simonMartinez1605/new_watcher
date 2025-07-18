@@ -180,6 +180,8 @@ def sharepoint(file_path, file_name, site_name, folder_name, metadata_dict):
     for key, value in metadata_dict.items():
         if value is not None:
             metadata.update({key: value})
+    
+    print(metadata)
     try:
         response = requests.post(update_url, data=json.dumps(metadata), cookies=authcookie, headers=headers)
         response.raise_for_status()

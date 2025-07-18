@@ -34,7 +34,7 @@ def ocr(my_path: str) -> str:
             my_path,
             skip_text=True,
             deskew=True,
-            jobs=os.cpu_count(), 
+            jobs=os.cpu_count() - 2,
             optimize=0
         )
     except Exception as e:
