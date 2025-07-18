@@ -138,7 +138,7 @@ class PDFMonitorGUI(QMainWindow):
                 self.show_json_table(json_data)
                 
                 # Mover el archivo a la carpeta Done
-                # smbclient.rename(pdf_info['full_path'],Path(pdf_info['folder_path']) / "Done" / f"{uuid.uuid4()}.pdf")
+                smbclient.rename(pdf_info['full_path'],Path(pdf_info['folder_path']) / "Done" / f"{uuid.uuid4()}.pdf")
                 
                 # Actualizar la lista
                 self.pdf_data.pop(selected_row)

@@ -35,6 +35,10 @@ load_dotenv(dotenv_path=DOTENV_PATH)
 # Make sure this path is correct for your environment
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
+poppler_path = os.getenv('POPPLER_PATH')
+
+print(poppler_path)
+
 # Global Caches and Data (Manage carefully with ProcessPoolExecutor)
 _JSON_CACHE = {} # Use a dictionary directly for cache
 
@@ -420,7 +424,7 @@ def optimized_indexing(pdf_filename, option, input_path, processed_path, pages: 
             thread_count=os.cpu_count(), # Use all CPU cores for conversion
             dpi=150,
             grayscale=True,
-            poppler_path=r'C:\Users\simon\Downloads\Release-24.08.0-0\poppler-24.08.0\Library\bin' # IMPORTANT: Update this path!
+            poppler_path=fr"{poppler_path}\bin" # IMPORTANT: Update this path!
         )
         
         # pages_length = len(pages_pil_images)

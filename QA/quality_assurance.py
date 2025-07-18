@@ -6,6 +6,7 @@ from PyQt5.QtCore import Qt, QSize
 from services.ocr import ocr
 from PyQt5.QtGui import QPixmap
 from pdf2image import convert_from_path
+from PyPDF2 import PdfReader # Import PdfReader
 from services.conection import sharepoint
 from QA.upperCaseDelegate import UpperCaseDelegate
 from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QTableWidget, QAbstractItemView,
@@ -20,8 +21,9 @@ class Json_table(QWidget):
         self.setWindowFlags(self.windowFlags() | Qt.Window)
 
         self.data = data_list
-        self.current_pdf_images = []  # Stores images for the currently selected PDF
-        self.current_page = 0
+        self.current_pdf_first_page_image = None  # Stores the first page image of the currently selected PDF
+        self.current_pdf_path = None # Store the path of the currently loaded PDF
+        self.current_page_display = 0 # This will always be 0 for the preview
         self.total_pages = 0
 
         self.init_ui()
@@ -66,7 +68,7 @@ class Json_table(QWidget):
         self.preview_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         pdf_preview_layout.addWidget(self.preview_label)
 
-        # Navigation controls for PDF
+        # Navigation controls for PDF (buttons will be disabled as only first page is shown)
         self.navigation_layout = QHBoxLayout()
         self.prev_button = QPushButton("Previous")
         self.next_button = QPushButton("Next")
@@ -180,12 +182,13 @@ class Json_table(QWidget):
             QMessageBox.critical(self, "Error", f"No se pudo abrir el archivo PDF: {e}")
 
     def show_pdf_preview(self):
-        """Displays the PDF preview for the selected row."""
+        """Displays the first page of the PDF preview for the selected row and shows total pages."""
         selected_items = self.table.selectedItems()
         if not selected_items:
             self.preview_label.setText("Select document to show preview.")
-            self.current_pdf_images = []
-            self.current_page = 0
+            self.current_pdf_first_page_image = None
+            self.current_pdf_path = None
+            self.current_page_display = 0
             self.total_pages = 0
             self.update_page_counter()
             self.update_navigation_buttons()
@@ -196,62 +199,66 @@ class Json_table(QWidget):
 
         if not os.path.exists(pdf_path):
             self.preview_label.setText("Document PDF not found.")
-            self.current_pdf_images = []
-            self.current_page = 0
+            self.current_pdf_first_page_image = None
+            self.current_pdf_path = None
+            self.current_page_display = 0
             self.total_pages = 0
             self.update_page_counter()
             self.update_navigation_buttons()
             return
 
-        # Optimization: Only convert PDF to images if a different PDF is selected
-        if not self.current_pdf_images or (hasattr(self, '_last_previewed_pdf') and self._last_previewed_pdf != pdf_path):
+        # Optimization: Only process PDF if a different one is selected
+        if self.current_pdf_path != pdf_path:
             self.preview_label.setText("Loading preview...")
             QApplication.processEvents() # Update UI while loading
 
             try:
-                # Convert PDF to image (all pages)
+                # Get total pages first (efficiently)
+                reader = PdfReader(pdf_path)
+                self.total_pages = len(reader.pages)
+
+                # Convert only the first page to image
                 # Lower DPI for faster loading if high resolution isn't strictly necessary for preview
-                images = convert_from_path(pdf_path, dpi=120, fmt='jpeg', thread_count=os.cpu_count()) # Use more threads
+                images = convert_from_path(pdf_path, first_page=1, last_page=1, dpi=150, fmt='jpeg', thread_count=os.cpu_count())
 
                 if images:
-                    self.current_pdf_images = images
-                    self.total_pages = len(images)
-                    self.current_page = 0  # Reset to first page for new PDF
-                    self._last_previewed_pdf = pdf_path # Store the path of the last previewed PDF
-                    self.show_page(self.current_page)
+                    self.current_pdf_first_page_image = images[0]
+                    self.current_pdf_path = pdf_path
+                    self.current_page_display = 0 # Always display the first page (index 0)
+                    self.show_first_page_image()
                 else:
-                    self.preview_label.setText("No se pudieron cargar imágenes del PDF.")
-                    self.current_pdf_images = []
+                    self.preview_label.setText("No se pudo cargar la primera página del PDF.")
+                    self.current_pdf_first_page_image = None
+                    self.current_pdf_path = None
                     self.total_pages = 0
             except Exception as e:
                 self.preview_label.setText(f"Error al cargar la vista previa:\n{str(e)}")
-                self.current_pdf_images = []
+                self.current_pdf_first_page_image = None
+                self.current_pdf_path = None
                 self.total_pages = 0
         else:
-            # If the same PDF is selected, just ensure the current page is shown
-            self.show_page(self.current_page)
+            # If the same PDF is selected, just ensure the first page is shown
+            self.show_first_page_image()
 
         self.update_page_counter()
         self.update_navigation_buttons()
 
-    def show_page(self, page_num):
-        """Displays a specific page of the current PDF preview."""
-        if not self.current_pdf_images or page_num < 0 or page_num >= self.total_pages:
+    def show_first_page_image(self):
+        """Displays the stored first page image of the current PDF preview."""
+        if not self.current_pdf_first_page_image:
             self.preview_label.setText("No hay página para mostrar.")
             return
 
-        image = self.current_pdf_images[page_num]
-
         try:
             buffer = BytesIO()
-            image.save(buffer, format="JPEG")
+            self.current_pdf_first_page_image.save(buffer, format="JPEG")
             buffer.seek(0)
 
             pixmap = QPixmap()
             pixmap.loadFromData(buffer.getvalue())
 
             if pixmap.isNull():
-                self.preview_label.setText(f"Error al cargar la imagen de la página {page_num + 1}.")
+                self.preview_label.setText("Error al cargar la imagen de la primera página.")
                 return
 
             # Store the original pixmap to re-scale on resize
@@ -259,31 +266,31 @@ class Json_table(QWidget):
             self._scale_and_set_pixmap()
 
         except Exception as e:
-            self.preview_label.setText(f"Error al procesar la imagen de la página:\n{str(e)}")
-
-        self.update_page_counter()
-        self.update_navigation_buttons()
+            self.preview_label.setText(f"Error al procesar la imagen de la primera página:\n{str(e)}")
 
     def show_previous_page(self):
-        """Navigates to the previous page of the PDF preview."""
-        if self.current_page > 0:
-            self.current_page -= 1
-            self.show_page(self.current_page)
+        """
+        These buttons are now effectively disabled as only the first page is shown.
+        You might want to hide them or remove them entirely if they serve no purpose.
+        """
+        pass # No action as only the first page is displayed
 
     def show_next_page(self):
-        """Navigates to the next page of the PDF preview."""
-        if self.current_page < self.total_pages - 1:
-            self.current_page += 1
-            self.show_page(self.current_page)
+        """
+        These buttons are now effectively disabled as only the first page is shown.
+        You might want to hide them or remove them entirely if they serve no purpose.
+        """
+        pass # No action as only the first page is displayed
 
     def update_page_counter(self):
         """Updates the page counter label."""
-        self.page_counter_label.setText(f"Página {self.current_page + 1} de {self.total_pages}")
+        # For preview, it will always show "Page 1 of X"
+        self.page_counter_label.setText(f"Página {self.current_page_display + 1} de {self.total_pages}")
 
     def update_navigation_buttons(self):
-        """Enables/disables navigation buttons based on current page."""
-        self.prev_button.setEnabled(self.current_page > 0)
-        self.next_button.setEnabled(self.current_page < self.total_pages - 1)
+        """Disables navigation buttons as only the first page is shown."""
+        self.prev_button.setEnabled(False)
+        self.next_button.setEnabled(False)
 
     def _scale_and_set_pixmap(self):
         """Helper to scale the pixmap to fit the preview label."""
