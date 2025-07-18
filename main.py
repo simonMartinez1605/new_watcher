@@ -134,7 +134,6 @@ class PDFMonitorGUI(QMainWindow):
             try:
                 # Ejecutar la función de indexing
                 json_data = indexing(pdf_info['full_path'], pdf_info['option'], pdf_info['folder_path'], Path(pdf_info['folder_path']) / "Process", int(pdf_info['pages']))
-                
                 # Mostrar los resultados en una nueva ventana
                 self.show_json_table(json_data)
                 
@@ -200,7 +199,7 @@ class PDFMonitorGUI(QMainWindow):
                                 }
                                 self.pdf_data.append(pdf_info)
                                 self.update_pdf_list()
-                time.sleep(10)
+                time.sleep(2)
             except Exception as e:
                 print(f"Error en monitor_folder: {e}")
                 time.sleep(30)

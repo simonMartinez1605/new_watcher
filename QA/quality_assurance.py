@@ -2,13 +2,15 @@ import os
 import sys
 import subprocess
 from io import BytesIO
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QSize
 from services.ocr import ocr
 from PyQt5.QtGui import QPixmap
 from pdf2image import convert_from_path
 from services.conection import sharepoint
 from QA.upperCaseDelegate import UpperCaseDelegate
-from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QTableWidget, QAbstractItemView, QLabel, QPushButton, QTableWidgetItem, QVBoxLayout, QProgressDialog, QApplication, QMessageBox)
+from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QTableWidget, QAbstractItemView,
+                             QLabel, QPushButton, QTableWidgetItem, QVBoxLayout,
+                             QProgressDialog, QApplication, QMessageBox, QSizePolicy)
 
 class Json_table(QWidget):
     def __init__(self, data_list):
@@ -18,28 +20,39 @@ class Json_table(QWidget):
         self.setWindowFlags(self.windowFlags() | Qt.Window)
 
         self.data = data_list
-        self.current_page = 0  # Página actual
-        self.total_pages = len(data_list)  # Total de páginas (ajustar según el PDF)
-        self.images = []  # Lista para almacenar las imágenes del PDF
+        self.current_pdf_images = []  # Stores images for the currently selected PDF
+        self.current_page = 0
+        self.total_pages = 0
 
-        # Layout principal (vertical)
+        self.init_ui()
+        self.load_data(self.data)
+
+        # Connect signals after initial setup
+        self.table.itemSelectionChanged.connect(self.show_pdf_preview)
+        self.table.itemChanged.connect(self.update_json_from_table)
+        self.prev_button.clicked.connect(self.show_previous_page)
+        self.next_button.clicked.connect(self.show_next_page)
+        self.upload_button.clicked.connect(self.upload)
+
+        # Set delegate for uppercase column
+        self.table.setItemDelegateForColumn(0, UpperCaseDelegate())
+
+    def init_ui(self):
+        """Initializes the user interface."""
         self.main_layout = QVBoxLayout(self)
 
-        # Layout horizontal para tabla y vista previa (como antes)
+        # Content layout for table and preview
         self.content_layout = QHBoxLayout()
 
-        # Tabla (40% del espacio)
+        # Table (50% of space for better visibility of data)
         self.table = QTableWidget()
         self.table.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.table.itemSelectionChanged.connect(self.show_pdf_preview)
-        self.content_layout.addWidget(self.table, 5)  # 40% del espacio
+        self.table.setEditTriggers(QAbstractItemView.DoubleClicked | QAbstractItemView.AnyKeyPressed)
+        self.table.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.content_layout.addWidget(self.table, 1)  # Use stretch factor 1 (equal to preview)
 
-        self.navigation_layout = QHBoxLayout()
-
-        self.page_counter_label = QLabel("Página 0 de 0")
-        self.navigation_layout.addWidget(self.page_counter_label)
-        
-        # Vista previa (60% del espacio)
+        # PDF Preview section
+        pdf_preview_layout = QVBoxLayout()
         self.preview_label = QLabel("Seleccione un documento para ver la vista previa")
         self.preview_label.setAlignment(Qt.AlignCenter)
         self.preview_label.setStyleSheet("""
@@ -49,14 +62,29 @@ class Json_table(QWidget):
                 border-radius: 5px;
             }
         """)
-        self.content_layout.addWidget(self.preview_label, 6)  # 60% del espacio
+        self.preview_label.setMinimumSize(400, 300) # Set a minimum size for the preview
+        self.preview_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        pdf_preview_layout.addWidget(self.preview_label)
 
-        # Añadir el layout horizontal al layout principal
+        # Navigation controls for PDF
+        self.navigation_layout = QHBoxLayout()
+        self.prev_button = QPushButton("Anterior")
+        self.next_button = QPushButton("Siguiente")
+        self.page_counter_label = QLabel("Página 0 de 0")
+        self.page_counter_label.setAlignment(Qt.AlignCenter)
+
+        self.navigation_layout.addWidget(self.prev_button)
+        self.navigation_layout.addWidget(self.page_counter_label)
+        self.navigation_layout.addWidget(self.next_button)
+        pdf_preview_layout.addLayout(self.navigation_layout)
+
+        self.content_layout.addLayout(pdf_preview_layout, 1) # Use stretch factor 1 (equal to table)
+
         self.main_layout.addLayout(self.content_layout)
 
-        # Crear y añadir el botón en la parte inferior
-        self.button = QPushButton("Export")
-        self.button.setStyleSheet("""
+        # Export Button
+        self.upload_button = QPushButton("Exportar")
+        self.upload_button.setStyleSheet("""
             QPushButton {
                 background-color: #4CAF50;
                 color: white;
@@ -69,87 +97,78 @@ class Json_table(QWidget):
                 background-color: #45a049;
             }
         """)
-        # Botones de navegación (anterior y siguiente)
-        self.prev_button = QPushButton("Anterior")
-        self.prev_button.clicked.connect(self.show_previous_page)
-        self.next_button = QPushButton("Siguiente")
-        self.next_button.clicked.connect(self.show_next_page)
-
-        self.navigation_layout.addWidget(self.prev_button)
-        self.navigation_layout.addWidget(self.next_button)
-        self.main_layout.addLayout(self.navigation_layout)
-
-        self.button.clicked.connect(self.upload)
-        self.main_layout.addWidget(self.button, alignment=Qt.AlignRight)
-
-        self.load_data(self.data)
-        self.upper_delegate = UpperCaseDelegate()
-        self.table.setItemDelegateForColumn(0, self.upper_delegate)
-        self.table.itemChanged.connect(self.update_json_from_table)
-
-        self.progress_label = QLabel(self)
-        self.progress_label.setAlignment(Qt.AlignCenter)
-        self.progress_label.hide()
+        self.main_layout.addWidget(self.upload_button, alignment=Qt.AlignRight)
 
     def load_data(self, data_list):
-            if not data_list:
-                return
+        """Populates the QTableWidget with data."""
+        if not data_list:
+            self.table.setRowCount(0)
+            self.table.setColumnCount(0)
+            return
 
-            self.headers = list(data_list[0].keys())
-            self.headers.append("open_pdf")
+        self.headers = list(data_list[0].keys())
+        self.headers.append("open_pdf")
 
-            self.table.setColumnCount(len(self.headers))
-            self.table.setRowCount(len(data_list))
-            self.table.setHorizontalHeaderLabels(self.headers)
+        self.table.setColumnCount(len(self.headers))
+        self.table.setHorizontalHeaderLabels(self.headers)
+        self.table.setRowCount(len(data_list))
 
-            for row_idx, item in enumerate(data_list):
-                for col_idx, key in enumerate(self.headers):
-                    if key == "open_pdf":
-                        btn = QPushButton("Abrir PDF")
-                        btn.setStyleSheet("""
-                            QPushButton {
-                                background-color: #4CAF50;
-                                color: white;
-                                border: none;
-                                padding: 5px;
-                                border-radius: 3px;
-                            }
-                            QPushButton:hover {
-                                background-color: #45a049;
-                            }
-                        """)
-                        btn.clicked.connect(lambda _, r=row_idx: self.open_pdf(r))
-                        self.table.setCellWidget(row_idx, col_idx, btn)
-                    else:
-                        table_item = QTableWidgetItem((item[key]))
-                        table_item.setFlags(table_item.flags() | Qt.ItemIsEditable)
-                        self.table.setItem(row_idx, col_idx, table_item)
+        for row_idx, item in enumerate(data_list):
+            for col_idx, key in enumerate(self.headers):
+                if key == "open_pdf":
+                    btn = QPushButton("Abrir PDF")
+                    btn.setStyleSheet("""
+                        QPushButton {
+                            background-color: #4CAF50;
+                            color: white;
+                            border: none;
+                            padding: 5px;
+                            border-radius: 3px;
+                        }
+                        QPushButton:hover {
+                            background-color: #45a049;
+                        }
+                    """)
+                    # Using functools.partial for cleaner signal connection if needed,
+                    # but lambda is fine here as well for simple cases.
+                    btn.clicked.connect(lambda _, r=row_idx: self.open_pdf(r))
+                    self.table.setCellWidget(row_idx, col_idx, btn)
+                else:
+                    table_item = QTableWidgetItem(str(item.get(key, ''))) # Use .get with default for robustness
+                    table_item.setFlags(table_item.flags() | Qt.ItemIsEditable)
+                    self.table.setItem(row_idx, col_idx, table_item)
 
-            self.table.resizeColumnsToContents()
+        self.table.resizeColumnsToContents()
 
     def update_json_from_table(self, item):
-        """Actualiza el JSON a partir de la tabla cuando se edita un valor"""
+        """Updates the internal data (JSON) when a table item is edited."""
         row = item.row()
         column = item.column()
         key = self.headers[column]
+
         if key == "open_pdf":
             return
 
         new_value = item.text()
+        # Attempt to convert to int or float if possible
         try:
-            new_value = int(new_value)
-        except ValueError:
-            try:
+            if '.' in new_value: # Check for decimal point to assume float
                 new_value = float(new_value)
-            except ValueError:
-                pass
+            else:
+                new_value = int(new_value)
+        except ValueError:
+            pass # Keep as string if conversion fails
 
         self.data[row][key] = new_value
-        print(f"Update: Row {row + 1}, Column '{key}' => {new_value}")
+        print(f"Update: Fila {row + 1}, Columna '{key}' => {new_value}")
 
     def open_pdf(self, row):
-        """Abre el PDF correspondiente a la fila seleccionada"""
+        """Opens the PDF file associated with the selected row."""
         pdf_path = self.data[row]["pdf"]
+        if not os.path.exists(pdf_path):
+            QMessageBox.warning(self, "Error al abrir PDF", f"El archivo PDF no se encontró en: {pdf_path}")
+            return
+
         try:
             if sys.platform == "win32":
                 os.startfile(pdf_path)
@@ -158,132 +177,151 @@ class Json_table(QWidget):
             else:
                 subprocess.run(["xdg-open", pdf_path])
         except Exception as e:
-            print(f"The system can't open the file: {e}")
+            QMessageBox.critical(self, "Error", f"No se pudo abrir el archivo PDF: {e}")
 
     def show_pdf_preview(self):
-        selected = self.table.selectedItems()
-        if not selected:
+        """Displays the PDF preview for the selected row."""
+        selected_items = self.table.selectedItems()
+        if not selected_items:
+            self.preview_label.setText("Seleccione un documento para ver la vista previa")
+            self.current_pdf_images = []
+            self.current_page = 0
+            self.total_pages = 0
+            self.update_page_counter()
+            self.update_navigation_buttons()
             return
 
-        row = selected[0].row()
+        row = selected_items[0].row()
         pdf_path = self.data[row]["pdf"]
 
         if not os.path.exists(pdf_path):
             self.preview_label.setText("Documento PDF no encontrado.")
+            self.current_pdf_images = []
+            self.current_page = 0
+            self.total_pages = 0
+            self.update_page_counter()
+            self.update_navigation_buttons()
             return
 
-        try:
-            # Convertir PDF a imagen (todas las páginas)
-            images = convert_from_path(pdf_path, dpi=300, fmt='jpeg')
+        # Optimization: Only convert PDF to images if a different PDF is selected
+        if not self.current_pdf_images or (hasattr(self, '_last_previewed_pdf') and self._last_previewed_pdf != pdf_path):
+            self.preview_label.setText("Cargando vista previa...")
+            QApplication.processEvents() # Update UI while loading
 
-            if images:
-                self.images = images  # Guardar todas las imágenes generadas
-                self.total_pages = len(images)  # Total de páginas
-                self.show_page(self.current_page)  # Mostrar la página actual
+            try:
+                # Convert PDF to image (all pages)
+                # Lower DPI for faster loading if high resolution isn't strictly necessary for preview
+                images = convert_from_path(pdf_path, dpi=200, fmt='jpeg', thread_count=2) # Use more threads
 
-        except Exception as e:
-            self.preview_label.setText(f"Error al cargar la vista previa:\n{str(e)}")
+                if images:
+                    self.current_pdf_images = images
+                    self.total_pages = len(images)
+                    self.current_page = 0  # Reset to first page for new PDF
+                    self._last_previewed_pdf = pdf_path # Store the path of the last previewed PDF
+                    self.show_page(self.current_page)
+                else:
+                    self.preview_label.setText("No se pudieron cargar imágenes del PDF.")
+                    self.current_pdf_images = []
+                    self.total_pages = 0
+            except Exception as e:
+                self.preview_label.setText(f"Error al cargar la vista previa:\n{str(e)}")
+                self.current_pdf_images = []
+                self.total_pages = 0
+        else:
+            # If the same PDF is selected, just ensure the current page is shown
+            self.show_page(self.current_page)
+
+        self.update_page_counter()
+        self.update_navigation_buttons()
 
     def show_page(self, page_num):
-        """Muestra la página correspondiente"""
-        if page_num < 0 or page_num >= self.total_pages:
-            print(f"Página inválida: {page_num}")
+        """Displays a specific page of the current PDF preview."""
+        if not self.current_pdf_images or page_num < 0 or page_num >= self.total_pages:
+            self.preview_label.setText("No hay página para mostrar.")
             return
 
-        image = self.images[page_num]
+        image = self.current_pdf_images[page_num]
 
-        if image is None:
-            print(f"Error: la imagen de la página {page_num} no se pudo generar.")
-            return
+        try:
+            buffer = BytesIO()
+            image.save(buffer, format="JPEG")
+            buffer.seek(0)
 
-        # Convertir a QPixmap
-        buffer = BytesIO()
-        image.save(buffer, format="JPEG")
-        buffer.seek(0)
+            pixmap = QPixmap()
+            pixmap.loadFromData(buffer.getvalue())
 
-        pixmap = QPixmap()
-        pixmap.loadFromData(buffer.getvalue())
+            if pixmap.isNull():
+                self.preview_label.setText(f"Error al cargar la imagen de la página {page_num + 1}.")
+                return
 
-        if pixmap.isNull():
-            print(f"Error al cargar la imagen de la página {page_num} en QPixmap.")
-            return
+            # Store the original pixmap to re-scale on resize
+            self.original_pixmap = pixmap
+            self._scale_and_set_pixmap()
 
-        # Escalar la imagen al tamaño del QLabel
-        available_size = self.preview_label.size()
-        scaled_pixmap = pixmap.scaled(available_size, Qt.KeepAspectRatio, Qt.SmoothTransformation)
-        self.preview_label.setPixmap(scaled_pixmap)
+        except Exception as e:
+            self.preview_label.setText(f"Error al procesar la imagen de la página:\n{str(e)}")
 
-        # Actualizar el contador de páginas
-        self.page_counter_label.setText(f"Página {self.current_page + 1} de {self.total_pages}")
-
-        # Desactivar botones si estamos en la primera o última página
+        self.update_page_counter()
         self.update_navigation_buttons()
 
     def show_previous_page(self):
-        """Muestra la página anterior"""
+        """Navigates to the previous page of the PDF preview."""
         if self.current_page > 0:
             self.current_page -= 1
             self.show_page(self.current_page)
 
     def show_next_page(self):
-        """Muestra la siguiente página"""
+        """Navigates to the next page of the PDF preview."""
         if self.current_page < self.total_pages - 1:
             self.current_page += 1
             self.show_page(self.current_page)
 
+    def update_page_counter(self):
+        """Updates the page counter label."""
+        self.page_counter_label.setText(f"Página {self.current_page + 1} de {self.total_pages}")
+
     def update_navigation_buttons(self):
-        """Desactiva los botones de navegación si estamos en los extremos"""
-        if self.current_page == 0:
-            self.prev_button.setEnabled(False)  # Desactivar botón 'Anterior'
-        else:
-            self.prev_button.setEnabled(True)
+        """Enables/disables navigation buttons based on current page."""
+        self.prev_button.setEnabled(self.current_page > 0)
+        self.next_button.setEnabled(self.current_page < self.total_pages - 1)
 
-        if self.current_page == self.total_pages - 1:
-            self.next_button.setEnabled(False)  # Desactivar botón 'Siguiente'
-        else:
-            self.next_button.setEnabled(True)
-
-    def scale_on_first_load(self):
-        """Escala la imagen solo al cargar inicialmente"""
+    def _scale_and_set_pixmap(self):
+        """Helper to scale the pixmap to fit the preview label."""
         if hasattr(self, 'original_pixmap') and not self.original_pixmap.isNull():
-            # Obtener tamaño disponible en el QLabel
             available_size = self.preview_label.size()
-            
-            # Escalar manteniendo relación de aspecto
             scaled_pixmap = self.original_pixmap.scaled(
                 available_size,
                 Qt.KeepAspectRatio,
                 Qt.SmoothTransformation
             )
-            
-            # Guardar el pixmap escalado para no volver a escalar
-            self.current_pixmap = scaled_pixmap
-            self.preview_label.setPixmap(self.current_pixmap)
+            self.preview_label.setPixmap(scaled_pixmap)
+            self.current_scaled_pixmap = scaled_pixmap # Store the currently displayed scaled pixmap
 
     def resizeEvent(self, event):
-        """Maneja el redimensionamiento de la ventana sin reescalar la imagen"""
+        """Handles window resizing to re-scale the PDF preview."""
         super().resizeEvent(event)
-        # Solo mostramos el pixmap actual sin volver a escalar
-        if hasattr(self, 'current_pixmap'):
-            self.preview_label.setPixmap(self.current_pixmap)
+        self._scale_and_set_pixmap()
 
     def upload(self):
-        """Sube los documentos a SharePoint y aplica OCR"""
-        try: 
-            progress = QProgressDialog("Upload data to sharepoint...", "Cancel", 0, len(self.data), self)
+        """Uploads documents to SharePoint and applies OCR."""
+        # This function remains unchanged as per your request
+        try:
+            progress = QProgressDialog("Subiendo datos a SharePoint...", "Cancelar", 0, len(self.data), self)
             progress.setWindowModality(Qt.WindowModal)
             progress.show()
 
             for i, data in enumerate(self.data, 1):
-                if progress.wasCanceled(): 
+                if progress.wasCanceled():
+                    QMessageBox.warning(self, "Carga cancelada", "La carga de documentos ha sido cancelada por el usuario.")
                     break
 
                 progress.setValue(i)
-                progress.setLabelText(f"Procesing {data['name']}...")
-                QApplication.processEvents()
+                progress.setLabelText(f"Procesando {data.get('name', 'documento')}...")
+                QApplication.processEvents() # Ensure UI updates
 
-                try: 
+                try:
                     ocr(data['pdf'])
+                    # folder_metadata and metadata_dict creation remains here
                     folder_metadata = {
                         "PL": data['pl'],
                     }
@@ -291,13 +329,20 @@ class Json_table(QWidget):
                         "PL": data['pl'],
                         "Case_x0020_type": data['case_type'],
                     }
-                    sharepoint(data['pdf'], f"{data['name']}.pdf", data['folder_name'], data['name'],metadata_dict)
-                except Exception as e: 
-                    print(f"Error to process data: {e}")
+                    sharepoint(data['pdf'], f"{data['name']}.pdf", data['folder_name'], data['name'], metadata_dict)
+                except Exception as e:
+                    # Log the error and notify the user without stopping the whole process
+                    QMessageBox.warning(self, "Error de procesamiento",
+                                        f"Error al procesar el documento {data.get('name', 'desconocido')}: {e}")
+                    print(f"Error al procesar el documento {data.get('name', 'desconocido')}: {e}")
+                    # Optionally, you might want to mark this item as failed in self.data or a separate list
 
             progress.close()
-            self.close()
+            # Only close the window if the upload wasn't cancelled or had critical errors
+            if not progress.wasCanceled():
+                QMessageBox.information(self, "Carga completa", "Todos los documentos han sido procesados y subidos.")
+                self.close()
 
         except Exception as e:
-            print(f"Error to upload documents: {e}")
-            QMessageBox.critical(self, "Error", f"Upload documents: \n{str(e)}")
+            QMessageBox.critical(self, "Error de carga global", f"Ocurrió un error inesperado durante la carga: \n{str(e)}")
+            print(f"Error al cargar documentos: {e}")

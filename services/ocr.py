@@ -1,7 +1,7 @@
 import os
 import sys
 import platform
-import ocrmypdf # Can be imported here or after the path adjustments
+import ocrmypdf
 
 # --- START PYINSTALLER PATH ADJUSTMENTS ---
 if getattr(sys, 'frozen', False):
@@ -29,8 +29,6 @@ print(f"DEBUG: Tesseract executable path determined: {tesseract_exe_path}")
 def ocr(my_path: str) -> str:
     # ... (rest of your ocr function code as above, using tesseract_exe_path) ...
     try:
-        print(f"DEBUG inside ocr: Input PDF path: {my_path}")
-        print(f"DEBUG inside ocr: Tesseract executable path for call: {tesseract_exe_path}")
         ocrmypdf.ocr(
             my_path,
             my_path,

@@ -5,454 +5,519 @@ import json
 import shutil
 import random
 import traceback
-import pytesseract
 import numpy as np
+import pytesseract
 from io import BytesIO
 from pathlib import Path
 from dotenv import load_dotenv
-from models.models import Model
+from models.models import Model  
 from PIL import Image, ImageFilter
-from PyPDF2 import PdfWriter, PdfReader
 from pdf2image import convert_from_path
-from services.deskewing import deskew_image
-from services.compare_keys import find_similar_key
+from PyPDF2 import PdfWriter, PdfReader
+from services.deskewing import deskew_image  
+from services.compare_keys import find_similar_key  
 from errors.errors import regex_name, regex_alien_number
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ProcessPoolExecutor, as_completed, ThreadPoolExecutor
 
-def get_base_path(): 
+# --- Configuration ---
+def get_base_path() -> Path:
+    """Determines the base path of the application, handling PyInstaller's _MEIPASS."""
     if hasattr(sys, '_MEIPASS'):
         return Path(sys._MEIPASS)
-    else: 
-        return os.path.abspath(os.path.dirname(__file__))
-    
-dotenv_path = os.path.join(get_base_path(), '.env')
+    else:
+        return Path(os.path.abspath(os.path.dirname(__file__)))
 
-load_dotenv(dotenv_path=dotenv_path)
+BASE_PATH = get_base_path()
+DOTENV_PATH = BASE_PATH / '.env'
+load_dotenv(dotenv_path=DOTENV_PATH)
 
+# Set Tesseract command path
+# Make sure this path is correct for your environment
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
-# Configuración global
-_JSON_CACHE = {}
+# Global Caches and Data (Manage carefully with ProcessPoolExecutor)
+_JSON_CACHE = {} # Use a dictionary directly for cache
 
+# Global for FamilyClosedCases merging (will be managed per PDF in main process)
 pending_merges = {}
+# 'data' variable seems to be used globally for 'FamilyClosedCases' but its specific usage isn't clear from provided code.
+# If 'data' is meant to store collected results for FamilyClosedCases before final merge, it should be managed locally per PDF.
+# For now, I'll keep it as a placeholder if it's used elsewhere.
+data = {} 
 
-data = {}
+# --- Utility Functions ---
+def resource_path(relative_path: str) -> Path:
+    """Obtiene la ruta absoluta de un recurso relativo."""
+    try:
+        base_path = Path(sys._MEIPASS)
+    except AttributeError:
+        base_path = Path(os.path.abspath("."))
+    return base_path / relative_path
 
-#Cargar variables de entorno
+PROYECT_JSONS_PATH = resource_path("jsons") # Renamed for clarity and consistency
 
-def resource_path(relative_path: str) -> str:
-    """Obtiene la ruta absoluta de un recurso relativo"""
-    try: 
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.abspath(".")
-
-    return os.path.join(base_path, relative_path)
-
-# print(f"JSON file path: {json_file_path}")
-
-proyect_path = os.path.abspath("jsons")
-
-# print(f"Project path: {proyect_path}")
-
-def load_json_cached(file_path: str) -> dict:
-    """Carga JSON con caché para evitar lecturas repetidas de disco"""
-    # print(file_path)
+def load_json_cached(file_path: Path) -> dict:
+    """Carga JSON con caché para evitar lecturas repetidas de disco."""
     if file_path not in _JSON_CACHE:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            _JSON_CACHE[file_path] = json.load(f)
-    return _JSON_CACHE[file_path]
+        try:
+            with open(file_path, 'r', encoding='utf-8') as f:
+                _JSON_CACHE[file_path] = json.load(f)
+        except FileNotFoundError:
+            print(f"Error: JSON file not found at {file_path}")
+            return {} # Return empty dict or raise specific error
+        except json.JSONDecodeError:
+            print(f"Error: Could not decode JSON from {file_path}")
+            return {}
+    return _JSON_CACHE.get(file_path, {}) # Return an empty dict if key not found (e.g., on error)
 
-def preprocess_image(image):
-    """Mejora la imagen para OCR"""
-    return image.filter(ImageFilter.SHARPEN).convert('L')
+def preprocess_image(image: Image.Image) -> Image.Image:
+    """Mejora la imagen para OCR. Already returns grayscale."""
+    return image.filter(ImageFilter.SHARPEN).convert('L') # Convert to grayscale directly after sharpen
 
-def needs_deskewing(image):
-    """Determina si la imagen necesita corrección de inclinación"""
-    # Implementación básica - puedes mejorarla con detección de bordes
+def needs_deskewing(image: np.ndarray) -> bool:
+    """Determina si la imagen necesita corrección de inclinación.
+    
+    Implementación básica - puedes mejorarla con detección de bordes o un modelo de ML.
+    """
+    # Placeholder: You might want to implement a more robust check here.
+    # For now, it always returns True as in your original code.
     return True
+# --- Core Processing Functions ---
+def process_page_optimized(page_image: Image.Image) -> Model | None:
+    """Versión optimizada del procesamiento de página para OCR.
+    
+    Args:
+        page_image (Image.Image): La imagen PIL de la página a procesar.
 
-def process_page_optimized(page):
-    """Versión optimizada del procesamiento de página"""
+    Returns:
+        Model | None: Un objeto Model con los datos del OCR o None si hay un error.
+    """
     try:
         # Preprocesamiento
-        pil_image = preprocess_image(page)
-        
-        # Convertir a numpy array manteniendo 3 canales si es necesario
-        if pil_image.mode == 'L':
-            # Si es escala de grises, convertir a RGB
-            pil_image = pil_image.convert('RGB')
-        
-        open_cv_image = np.array(pil_image)
-        
-        # Convertir de RGB a BGR (que es lo que OpenCV espera)
-        open_cv_image = open_cv_image[:, :, ::-1].copy()
-        
+        pil_image = preprocess_image(page_image)
+
+        # Convertir a numpy array for deskewing.
+        # deskew_image typically expects a 3-channel image for OpenCV.
+        # Convert 'L' (grayscale) to 'RGB' for consistent OpenCV input, then to BGR.
+        open_cv_image = np.array(pil_image.convert('RGB'))
+        open_cv_image = open_cv_image[:, :, ::-1].copy() # Convert from RGB to BGR (OpenCV's default color order)
+
         # Deskewing condicional
         if needs_deskewing(open_cv_image):
             open_cv_image = deskew_image(open_cv_image)
-            
-            # Convertir de vuelta a RGB para PIL
-            open_cv_image = open_cv_image[:, :, ::-1]
-        
-        # Configuración optimizada para Tesseract
+            open_cv_image = open_cv_image[:, :, ::-1] # Convert BGR back to RGB
+
+        # Configuration optimized for Tesseract
         custom_config = r'--oem 3 --psm 6'
-        
-        # Convertir a escala de grises para Tesseract si es necesario
-        ocr_image = Image.fromarray(open_cv_image).convert('L') if open_cv_image.shape[2] == 3 else Image.fromarray(open_cv_image)
-        
+
+        # Convert back to PIL Image (grayscale) for Tesseract
+        # If open_cv_image is 3D (RGB after deskewing), convert to 'L' (grayscale).
+        if len(open_cv_image.shape) == 3 and open_cv_image.shape[2] == 3:
+            ocr_image = Image.fromarray(open_cv_image).convert('L')
+        else: # Assumes it's already grayscale or 2D
+            ocr_image = Image.fromarray(open_cv_image)
+
         data_ocr_page = pytesseract.image_to_data(
-            ocr_image, 
+            ocr_image,
             config=custom_config,
             output_type=pytesseract.Output.DICT
         )
-        
+
         return Model(data_ocr_page, Image.fromarray(open_cv_image))
     except Exception as e:
         print(f"Error procesando página: {e}")
         traceback.print_exc()
         return None
 
-def search_in_doc_optimized(page, name_doc: str, type_data: str, json_type: str):
-    """Versión optimizada de búsqueda en documento"""
-    model = process_page_optimized(page)
-    if not model:
-        return None
+def search_in_doc_optimized(page_model: Model, name_doc: str, type_data: str, json_type: str) -> str | None:
+    """Versión optimizada de búsqueda en documento.
     
-    json_file_path = resource_path(f"{json_type}.json")
+    Args:
+        page_model (Model): El objeto Model con los datos del OCR de la página.
+        name_doc (str): El nombre del documento a buscar en el JSON.
+        type_data (str): El tipo de dato a extraer (e.g., "name", "a_number").
+        json_type (str): El nombre del archivo JSON a cargar (e.g., "42BReceipts").
 
-    verify_path = os.path.exists(json_file_path)
+    Returns:
+        str | None: El resultado de la búsqueda o None si no se encuentra.
+    """
+    if not page_model:
+        return None
 
-    print(f"Verify path: {verify_path}: {json_file_path}")
+    json_file_path = PROYECT_JSONS_PATH / f"{json_type}.json"
 
-    if verify_path == False:
-        json_file_path = resource_path(f"{proyect_path}")
-        json_file_path = fr"{json_file_path}\{json_type}.json"
-        print(f"JSON file path: {json_file_path}")
-        
-    # json_path = fr"{json_file_path}\{json_type}.json"
+    # Check if the file exists directly using pathlib
+    if not json_file_path.exists():
+        print(f"JSON file not found at expected path: {json_file_path}")
+        return None
 
     json_result = load_json_cached(json_file_path)
+
+    # Búsqueda más eficiente usando una comprensión de generador
+    matching_doc = next((doc for doc in json_result if doc.get("pdf") == name_doc), None)
     
-    # Búsqueda más eficiente
-    matching_doc = next((doc for doc in json_result if doc["pdf"] == name_doc), None)
     if not matching_doc or type_data not in matching_doc:
         return None
-    
-    key_word = matching_doc['key_word']
+
+    key_word = matching_doc.get('key_word')
+    if not key_word: # Ensure key_word exists
+        return None
+
     for coord in matching_doc[type_data]:
-        result = model.aproved_case(
-            coord['x'], coord['y'], 
-            coord['width'], coord['height'], 
+        result = page_model.aproved_case(
+            coord['x'], coord['y'],
+            coord['width'], coord['height'],
             key_word
         )
-        if result and 1 < len(result) < 170:
-            return result
+        # Check if result is valid and within expected length
+        if result and 1 < len(str(result)) < 170: # Convert result to string for length check
+            return str(result) # Ensure result is a string
     return None
 
-def save_and_ocr_optimized(result, processed_path, option, pdf_save):
-    try:
-        os.makedirs(processed_path, exist_ok=True)
-        output_pdf_path = os.path.join(processed_path, f"{result['name']}.pdf")
+def save_single_page_pdf(image: Image.Image, result_meta: dict, processed_path: Path, option: str) -> dict | None:
+    """Guarda una sola imagen PIL como un PDF individual y retorna sus metadatos.
+    
+    Args:
+        image (Image.Image): La imagen PIL de la página a guardar.
+        result_meta (dict): Diccionario con los resultados (nombre, número de extranjero, tipo de documento).
+        processed_path (Path): La ruta donde se guardarán los PDFs procesados.
+        option (str): El tipo de carpeta (e.g., "42BReceipts").
 
-        # Guardar el PDF individual
-        with open(output_pdf_path, "wb") as output_pdf:
-            pdf_save.write(output_pdf)  # pdf_save contiene solo una página
+    Returns:
+        dict | None: Diccionario con los metadatos del PDF guardado o None si hay un error.
+    """
+    try:
+        processed_path.mkdir(parents=True, exist_ok=True)
+        output_pdf_name = f"{result_meta.get('name', 'unknown')}.pdf"
+        output_pdf_path = processed_path / output_pdf_name
+
+        image.convert('RGB').save(output_pdf_path, save_all=True)
 
         return {
-            "name": regex_name(result['name']),
-            "alien_number": regex_alien_number(result['alien_number']),
-            "pdf": output_pdf_path,
-            "doc_type": result.get('doc_type'),
+            "name": regex_name(result_meta.get('name', '')),
+            "alien_number": regex_alien_number(result_meta.get('alien_number', '')),
+            "pdf": str(output_pdf_path),
+            "doc_type": result_meta.get('doc_type'),
             "folder_name": option
         }
     except Exception as e:
-        print(f"❌ Error guardando PDF individual: {e}")
+        print(f"❌ Error guardando PDF individual desde imagen: {e}")
+        traceback.print_exc()
         return None
+
+def merge_pages_to_pdf(images: list[Image.Image], result_meta: dict, processed_path: Path, option: str, pages_number: list[str] = None) -> dict | None:
+    """Fusiona múltiples imágenes en un solo PDF.
     
-def copy_pdf(input_path, output_path):
-    """Copia un PDF de input_path a output_path"""
+    Args:
+        images (list[Image.Image]): Lista de imágenes PIL a fusionar.
+        result_meta (dict): Metadatos del documento fusionado.
+        processed_path (Path): La ruta donde se guardará el PDF combinado.
+        option (str): El tipo de carpeta.
+        pages_number (list[str], optional): Lista de cadenas de números de página para ordenar.
+
+    Returns:
+        dict | None: Metadatos del PDF fusionado o None si hay un error.
+    """
     try:
-        reader = PdfReader(input_path)
-        writer = PdfWriter()
+        processed_path.mkdir(parents=True, exist_ok=True)
+        output_pdf_name = f"{result_meta.get('name', 'unknown')}.pdf"
+        output_pdf_path = processed_path / output_pdf_name
 
-        for page in reader.pages:
-            writer.add_page(page)
-
-        with open(output_path, "wb") as output_file: 
-            writer.write(output_file)
-
-        return output_file
-
-    except Exception as e:
-        print(f"❌ Error al copiar el PDF: {e}")
-        return False
-    
-
-def merge_pages(images, result, processed_path, option, pages_number=None):
-    try:
-        output_pdf_path = os.path.join(processed_path, f"{result['name']}.pdf")
-
-        # Si se proporciona pages_number, ordenar las imágenes en base a ese orden
         if pages_number:
-            # Emparejar páginas con sus números
             paired = list(zip(pages_number, images))
+            def extract_page_num(p_str):
+                try:
+                    # Extracts number from "pageX" or "page_X"
+                    return int(''.join(filter(str.isdigit, p_str)))
+                except ValueError:
+                    return float('inf') 
 
-            # Extraer número como entero de strings tipo "page2"
-            def extract_page_num(p): return int(p.replace("page", "").strip())
             paired.sort(key=lambda x: extract_page_num(x[0]))
-
-            # Obtener imágenes ordenadas
             ordered_images = [img.convert('RGB') for _, img in paired]
         else:
-            # Si no hay pages_number, convertir directamente todas las imágenes a RGB
             ordered_images = [img.convert('RGB') for img in images]
 
-        # Guardar el PDF
+        if not ordered_images:
+            print("No images to merge.")
+            return None
+
+        # Save the PDF
         ordered_images[0].save(output_pdf_path, save_all=True, append_images=ordered_images[1:])
 
         return {
-            "name": regex_name(result['name']),
-            "pl": result['pl'],
-            "pdf": output_pdf_path,
-            "case_type": result['case_type'],
-            "folder_name": option
-        }
-        return {
-            "name": regex_name(result['name']),
-            "alien_number": regex_alien_number(result['alien_number']),
-            "pdf": output_pdf_path,
-            "doc_type": result['doc_type'],
+            "name": regex_name(result_meta.get('name', '')),
+            "pl": result_meta.get('pl', ''),
+            "pdf": str(output_pdf_path),
+            "case_type": result_meta.get('case_type', ''),
             "folder_name": option
         }
     except Exception as e:
         print(f"❌ Error guardando PDF combinado (imágenes): {e}")
+        traceback.print_exc()
         return None
 
-def exect_funct_optimized(doc_type, page, option, processed_path, json_type, save_pdf, pages_length=None):
-    try:
-        doc_config = {
-            "42BReceipts": {
-                "Payment": ("Payment", 1, "Payment", "page1"),
-                "Receipts1": ("Receipts_42B", 2, "Receipts", "page1"),
-                "Receipts2": ("Receipts_42B", 2, "Receipts", "page2"),
-                "Appointment": ("Appointment_42B", 1, "Appointment", "page1"),
-                "Reused": ("Reused_42B", 1, "Reused", "page1"),
-            },
-            "Asylum": {
-                "Lack_notice": ("Lack_notice", 1, "Lack_notice", "page1"),
-                "Notice1": ("Notice1", 1, "Notice", "page2"),
-                "Evidence_notice_1": ("Evidence_notice_1", 2, "Evidence_notice", "page1"),
-                "Evidence_notice_2": ("Evidence_notice_2", 2, "Evidence_notice", "page2"),
-                "Interview_Waiver_1": ("Interview_Waiver_1", 2, "Interview_Waiver", "page1"),
-                "Interview_Waiver_2": ("Interview_Waiver_2", 2, "Interview_Waiver", "page2"),
-                "Receipt_2023":("Receipt_2023", 1, "Receipt", "page1"),
-                "Receipt": ("Receipt", 1, "Receipts", "page1"),
-                "Receipts1": ("Receipts_Asylum", 2, "Receipts", "page1"),
-                "Receipts2": ("Receipts_Asylum", 2, "Receipts", "page2"),
-                "Appointment": ("Appointment_asylum", 1, "Appointment", "page1"),
-                "Appointment_asylum_2020": ("Appointment_asylum_2020", 1, "Appointment", "page1"),
-                "Appointment_asylum_2019": ("Appointment_asylum_2019", 1, "Appointment", "page1"),
-                "Appointment_asylum_2021":("Appointment_asylum_2021", 1, "Appointment", "page1"),
-                "Appointment_asylum_2022":("Appointment_asylum_2022", 1, "Appointment", "page1"),
-                "Approved_receipts": ("Approved_cases_asylum", 1, "Approved_receipts", "page1"),
-                "Payment_receipt": ("Asylum_receipt", 1, "Payment_receipt", "page1"),
-                "Defensive_receipt_2024": ("Defensive_receipt_2024", 1, "Defensive_receipt", "page1"),
-                "Defensive_receipt_2023": ("Defensive_receipt_2023", 1, "Defensive_receipt", "page1"),
-                "Defensive_receipt_2020": ("Defensive_receipt_2020", 1, "Defensive_receipt", "page1"),
-                "Defensive_receipt_2019":("Defensive_receipt_2019", 1, "Defensive_receipt", "page1"),
-                "Application_to_asylum": ("Application_to_asylum", 1, "Application_to_asylum", "page1"),
-                "Reused": ("Reused_asylum", 1, "Reused", "page1"),
-                "Reused_2018":("Reused_2018", 1, "Reused", "page1"),
-                "Reject": ("Reject", 1, "Reject", "page1"),
-                "Reject_2020": ("Reject_2020", 1, "Reject", "page1")
-            }, 
-            "FamilyClosedCases": {
-                "Family":("Family", 3, "Family", "page1"),
-            }
+def exect_funct_optimized_single_page(doc_type: str, page_image: Image.Image, option: str, processed_path: Path, json_type: str) -> dict | None:
+    """Función ejecutora optimizada para clasificar y procesar páginas (para documentos de una sola página).
+    
+    Args:
+        doc_type (str): El tipo de documento clasificado.
+        page_image (Image.Image): La imagen PIL de la página a procesar.
+        option (str): La opción de carpeta (e.g., "42BReceipts", "Asylum").
+        processed_path (Path): La ruta donde se guardarán los PDFs.
+        json_type (str): El nombre del archivo JSON de configuración.
+
+    Returns:
+        dict | None: Los metadatos del documento procesado o None si hay un error.
+    """
+    doc_config = {
+        "42BReceipts": {
+            "Payment": ("Payment", 1, "Payment", "page1"),
+            "Receipts1": ("Receipts_42B", 2, "Receipts", "page1"), # sheets_quantity 2 implies multi-page, but here it's processed as single
+            "Receipts2": ("Receipts_42B", 2, "Receipts", "page2"), # sheets_quantity 2 implies multi-page, but here it's processed as single
+            "Appointment": ("Appointment_42B", 1, "Appointment", "page1"),
+            "Reused": ("Reused_42B", 1, "Reused", "page1"),
+        },
+        "Asylum": {
+            "Lack_notice": ("Lack_notice", 1, "Lack_notice", "page1"),
+            "Notice1": ("Notice1", 1, "Notice", "page2"),
+            "Evidence_notice_1": ("Evidence_notice_1", 2, "Evidence_notice", "page1"),
+            "Evidence_notice_2": ("Evidence_notice_2", 2, "Evidence_notice", "page2"),
+            "Interview_Waiver_1": ("Interview_Waiver_1", 2, "Interview_Waiver", "page1"),
+            "Interview_Waiver_2": ("Interview_Waiver_2", 2, "Interview_Waiver", "page2"),
+            "Receipt_2023": ("Receipt_2023", 1, "Receipt", "page1"),
+            "Receipt": ("Receipt", 1, "Receipts", "page1"),
+            "Receipts1": ("Receipts_Asylum", 2, "Receipts", "page1"),
+            "Receipts2": ("Receipts_Asylum", 2, "Receipts", "page2"),
+            "Appointment": ("Appointment_asylum", 1, "Appointment", "page1"),
+            "Appointment_asylum_2020": ("Appointment_asylum_2020", 1, "Appointment", "page1"),
+            "Appointment_asylum_2019": ("Appointment_asylum_2019", 1, "Appointment", "page1"),
+            "Appointment_asylum_2021": ("Appointment_asylum_2021", 1, "Appointment", "page1"),
+            "Appointment_asylum_2022": ("Appointment_asylum_2022", 1, "Appointment", "page1"),
+            "Approved_receipts": ("Approved_cases_asylum", 1, "Approved_receipts", "page1"),
+            "Payment_receipt": ("Asylum_receipt", 1, "Payment_receipt", "page1"),
+            "Defensive_receipt_2024": ("Defensive_receipt_2024", 1, "Defensive_receipt", "page1"),
+            "Defensive_receipt_2023": ("Defensive_receipt_2023", 1, "Defensive_receipt", "page1"),
+            "Defensive_receipt_2020": ("Defensive_receipt_2020", 1, "Defensive_receipt", "page1"),
+            "Defensive_receipt_2019": ("Defensive_receipt_2019", 1, "Defensive_receipt", "page1"),
+            "Application_to_asylum": ("Application_to_asylum", 1, "Application_to_asylum", "page1"),
+            "Reused": ("Reused_asylum", 1, "Reused", "page1"),
+            "Reused_2018": ("Reused_2018", 1, "Reused", "page1"),
+            "Reject": ("Reject", 1, "Reject", "page1"),
+            "Reject_2020": ("Reject_2020", 1, "Reject", "page1")
         }
+        # FamilyClosedCases is handled separately for merging logic
+    }
 
-        config = doc_config.get(option, {}).get(doc_type)
-        if not config:
-            print(f"❌ Tipo de documento no reconocido: {doc_type}")
-            result = {"name": f"{uuid.uuid4()}", "alien_number": f"{random.randint(1,10000)}", "doc_type": f"{uuid.uuid4()}", "folder_name":option}
-            # return save_and_ocr_optimized(result, processed_path, option, save_pdf)
-
-        if option == "FamilyClosedCases":
-            
-            name = search_in_doc_optimized(page, "Family", "name", option) or "None"
-            case_type = search_in_doc_optimized(page, "Family", "case_type", option) or f"{uuid.uuid4()}"
-            pysical_location = search_in_doc_optimized(page, "Family", "pl", option) or f"None"
-
-            key = "FamlyClosedCases"
-
-            pending_merges.setdefault(key, {
-                "pages": [], 
-                "pages_number": []
-            })
-
-            if name != "None" and case_type != "None":
-                data["name"] = regex_name(name)
-                data["pl"] = pysical_location
-                data["case_type"] = case_type
-                pending_merges[key]["pages_number"].append("page0")
-            
-            length_pages = len(pending_merges[key]["pages_number"])
-
-            pending_merges[key]["pages_number"].append(f"page{length_pages + 1}")
-
-            pending_merges[key]["pages"].append(page)
-
-            if len(pending_merges[key]['pages']) == pages_length:
-
-                print(f"Name: {data['name']}, PL: {data['pl']}, Case Type: {data['case_type']}")
-
-                merged = merge_pages(
-                    pending_merges[key]["pages"],
-                    data,
-                    processed_path,
-                    option,
-                    pending_merges[key]["pages_number"]
-                )
-
-                del pending_merges[key]
-                return merged
-
-        # type_name, sheets_quantity, kind_of_doc, page_number = config
-
-        # name = search_in_doc_optimized(page, type_name, "name", option) or str(uuid.uuid4())
-
-        # alien_number = search_in_doc_optimized(page, type_name, "a_number", option) or f"A{random.randint(1, 10000)}"
-        
-        # key = f"{name}_{sheets_quantity}_{kind_of_doc}"
-
-        # if sheets_quantity > 1:
-        #     # 
-        #     # Buscar si ya hay una key similar
-        #     similar_key = find_similar_key(key, pending_merges)
-
-        #     # Usar la key similar o la original
-        #     used_key = similar_key if similar_key else key
-
-        #     # Si no existe, inicializamos
-        #     pending_merges.setdefault(used_key, {
-        #         "pages": [],
-        #         "meta": {"name": name, "alien_number": alien_number, "doc_type": kind_of_doc}, 
-        #         "pages_number": []
-        #     })
-
-        #     # Añadimos la página
-        #     pending_merges[used_key]["pages"].append(page)
-        #     if pending_merges[used_key]['pages_number'] != []:
-        #         for page_info in pending_merges[used_key]['pages_number']:
-        #             if page_info != page_number:
-        #                 pending_merges[used_key]["pages_number"].append(page_number)
-
-        #     else: 
-        #         pending_merges[used_key]["pages_number"].append(page_number)
-
-        #     if len(pending_merges[used_key]['pages']) == sheets_quantity:
-        #         # print(f"Name: {pending_merges[used_key]['name']}")
-        #         merged = merge_pages(
-        #             pending_merges[used_key]["pages"],
-        #             pending_merges[used_key]["meta"],
-        #             processed_path,
-        #             option, 
-        #             pending_merges[used_key]["pages_number"]
-        #         )
-        #         del pending_merges[used_key]
-        #         return merged
-            
-        # else: 
-        #     result = {
-        #         "name": name,
-        #         "alien_number": alien_number,
-        #         "doc_type": kind_of_doc,
-        #         "folder_name": option
-        #     }
-        #     return save_and_ocr_optimized(result, processed_path, option, save_pdf)
-        
-    except Exception as e:
-        print(f"❌ Error en exect_funct_optimized: {e}")
-        traceback.print_exc()
-        return None
-    except Exception as e:
-        print(f"❌ Error en exect_funct_optimized: {e}")
-        traceback.print_exc()
-        return None
-
-def process_single_page(page, pages_length, option, processed_path, json_type):
-    """Procesa una página individual con su propio PdfWriter"""
     try:
-        pdf_save = PdfWriter()  # Nuevo PdfWriter para cada página
-        model = process_page_optimized(page)
+        config = doc_config.get(option, {}).get(doc_type)
+
+        model = process_page_optimized(page_image)
         if not model:
             return None
-        
-        # Guardar página en PDF
-        image_stream = BytesIO()
-        page.save(image_stream, format="PDF")
-        pdf_save.append(image_stream)
-        
+
+        if not config:
+            print(f"❌ Tipo de documento no reconocido: {doc_type} for option {option}. Assigning random metadata.")
+            result = {
+                "name": str(uuid.uuid4()),
+                "alien_number": f"A{random.randint(1, 10000)}",
+                "doc_type": doc_type,
+                "folder_name": option
+            }
+            return save_single_page_pdf(page_image, result, processed_path, option)
+
+        type_name, sheets_quantity, kind_of_doc, page_number_str = config # page_number_str is not used for saving single page
+
+        name = search_in_doc_optimized(model, type_name, "name", option) or str(uuid.uuid4())
+        alien_number = search_in_doc_optimized(model, type_name, "a_number", option) or f"A{random.randint(1, 10000)}"
+
+        result = {
+            "name": name,
+            "alien_number": alien_number,
+            "doc_type": kind_of_doc,
+            "folder_name": option
+        }
+        return save_single_page_pdf(page_image, result, processed_path, option)
+
+    except Exception as e:
+        print(f"❌ Error en exect_funct_optimized_single_page: {e}")
+        traceback.print_exc()
+        return None
+
+# This function is designed to be run by ProcessPoolExecutor
+def process_single_page_for_pool(page_data: tuple[bytes, int], option: str, processed_path_str: str, json_type: str) -> dict | None:
+    """Processes a single page received as bytes, suitable for ProcessPoolExecutor.
+    
+    Args:
+        page_data (tuple[bytes, int]): A tuple containing the page image as bytes and its original index.
+        option (str): The folder option.
+        processed_path_str (str): The string representation of the processed path.
+        json_type (str): The type of JSON to use.
+
+    Returns:
+        dict | None: The metadata of the processed document or None.
+    """
+    page_bytes, page_index = page_data
+    processed_path = Path(processed_path_str) # Reconstruct Path object in child process
+
+    try:
+        # Recreate PIL Image from bytes
+        page_image = Image.open(BytesIO(page_bytes))
+
+        model = process_page_optimized(page_image)
+        if not model:
+            return None
+
         classification_functions = {
             "42BReceipts": model.find_receipts,
             "Asylum": model.find_receipts_asylum,
-            "FamilyClosedCases": model.find_family_closed_cases
+            # FamilyClosedCases classification is handled in the main process
         }
-        
+
         classify_func = classification_functions.get(option)
         if not classify_func:
-            print(f"⚠️ Folder type did't found: {option}")
-            return None
-        
+            print(f"⚠️ Folder type '{option}' not found in classification functions. Assigning to 'Error' type.")
+            return exect_funct_optimized_single_page("Error", page_image, option, processed_path, json_type)
+
         doc_type = classify_func()
 
         if not doc_type:
-            print(f"⚠️ The system can't index document in the {option} folder")
-            return exect_funct_optimized("Error", page, option, processed_path, json_type, pdf_save, pages_length)
+            print(f"⚠️ The system can't index document in the {option} folder. Assigning to 'Error' type.")
+            return exect_funct_optimized_single_page("Error", page_image, option, processed_path, json_type)
 
-        return exect_funct_optimized(doc_type, page, option, processed_path, json_type, pdf_save, pages_length)
-        
+        return exect_funct_optimized_single_page(doc_type, page_image, option, processed_path, json_type)
+
     except Exception as e:
-        print(f"❌ Error to page process: {e}")
+        print(f"❌ Error in process_single_page_for_pool for page index {page_index}: {e}")
         traceback.print_exc()
         return None
 
-def process_pages_parallel(pages, pages_length, option, processed_path, json_type):
-    """Procesa páginas en paralelo, cada una con su propio PDF"""
-    results = []
-    with ThreadPoolExecutor(max_workers=os.cpu_count() - 2) as executor:
-        futures = [executor.submit(
-            process_single_page, 
-            page, pages_length, option, processed_path, json_type
-        ) for page in pages]
-        
-        for future in as_completed(futures):
-            result = future.result()
-            if result:
-                results.append(result)
-    return results
+# --- Main Indexing Function ---
+def optimized_indexing(pdf_filename, option, input_path, processed_path, pages: None):
+    """Versión optimizada de la función principal de indexación.
+    
+    Args:
+        pdf_filename (str): El nombre del archivo PDF a indexar.
+        option (str): La opción de carpeta para clasificar el documento.
+        input_path (Path): La ruta de entrada donde se encuentra el PDF.
+        processed_path (Path): La ruta de salida donde se guardarán los PDFs procesados.
 
-def optimized_indexing(pdf: str, option: str, input_path: str, processed_path: str, pages_length: int = None):
-    """Versión optimizada de la función principal"""
+    Returns:
+        list[dict]: Una lista de diccionarios con los metadatos de los documentos indexados.
+    """
+    # pdf_path = fr"{input_path}\{pdf_filename}"
+    
+    if not os.path.exists(pdf_filename):
+        print(f"Error: PDF file not found at {pdf_filename}")
+        return []
+
+    results = []
+    
     try:
-        pdf_path = os.path.join(input_path, pdf)
-        
-        pages = convert_from_path(
-            pdf_path,
-            thread_count=6,
-            dpi=200,
+        # Convert PDF pages to images using threads (efficient for I/O bound)
+        # Ensure poppler_path is correctly configured for your system
+        pages_pil_images = convert_from_path(
+            str(pdf_filename),
+            thread_count=os.cpu_count(), # Use all CPU cores for conversion
+            dpi=150,
             grayscale=True,
-            poppler_path=r'C:\Users\simon\Downloads\Release-24.08.0-0\poppler-24.08.0\Library\bin'
+            poppler_path=r'C:\Users\simon\Downloads\Release-24.08.0-0\poppler-24.08.0\Library\bin' # IMPORTANT: Update this path!
         )
         
-        results = process_pages_parallel(pages, pages_length, option, processed_path, option)
+        # pages_length = len(pages_pil_images)
+
+        if option == "FamilyClosedCases":
+            # For FamilyClosedCases, process sequentially in the main process to handle merging logic
+            # This ensures pending_merges is managed correctly for a single multi-page PDF.
+            current_pdf_family_pages = []
+            current_pdf_family_meta = {"name": "unknown", "pl": "", "case_type": str(uuid.uuid4())}
+            current_pdf_page_numbers = []
+
+            for i, page_image in enumerate(pages_pil_images):
+                model = process_page_optimized(page_image)
+                if not model:
+                    continue
+
+                # Classify (should always be "Family" if option is "FamilyClosedCases")
+                doc_type = model.find_family_closed_cases()
+                # if not doc_type:
+                #     print(f"⚠️ Page {i+1} of {pdf_filename}: Could not classify as FamilyClosedCases. Skipping for merge.")
+                #     continue
+
+                # Search for metadata on each page
+                name = search_in_doc_optimized(model, "Family", "name", option)
+                case_type = search_in_doc_optimized(model, "Family", "case_type", option)
+                pysical_location = search_in_doc_optimized(model, "Family", "pl", option)
+                
+                # Update metadata if new, non-None values are found
+                if name and name != "None":
+                    current_pdf_family_meta["name"] = regex_name(name)
+                if pysical_location != "None":
+                    current_pdf_family_meta["pl"] = pysical_location
+                if case_type != "none": # Only update if meaningful
+                    current_pdf_family_meta["case_type"] = case_type
+                
+                current_pdf_family_pages.append(page_image)
+                current_pdf_page_numbers.append(f"page{i+1}")
+                print(f"Processing page {i+1} of {pdf_filename} for FamilyClosedCases.")
+
+            if current_pdf_family_pages:
+                # After processing all pages for this FamilyClosedCases PDF, merge them
+                merged_result = merge_pages_to_pdf(
+                    current_pdf_family_pages,
+                    current_pdf_family_meta,
+                    processed_path,
+                    option,
+                    current_pdf_page_numbers
+                )
+                if merged_result:
+                    results.append(merged_result)
+            else:
+                print(f"No pages collected for merging for {pdf_filename} in FamilyClosedCases.")
+
+        # else:
+        #     # For other document types, process pages in parallel using ProcessPoolExecutor
+        #     # Each page will result in a separate PDF.
+            
+        #     # Serialize PIL Images to bytes to pass to child processes
+        #     # This avoids issues with pickling PIL Image objects directly
+        #     pages_as_bytes = []
+        #     for i, page_image in enumerate(pages_pil_images):
+        #         img_byte_arr = BytesIO()
+        #         page_image.save(img_byte_arr, format="PNG") # Use PNG for lossless serialization
+        #         pages_as_bytes.append((img_byte_arr.getvalue(), i))
+
+        #     # Using os.cpu_count() for max_workers to leverage all cores for CPU-bound tasks.
+        #     # You can adjust this (e.g., max(1, os.cpu_count() - 1)) if you need to reserve a core.
+        #     max_workers = os.cpu_count()
+            
+        #     with ProcessPoolExecutor(max_workers=max_workers) as executor:
+        #         futures = [executor.submit(
+        #             process_single_page_for_pool,
+        #             page_byte_data, option, str(processed_path), option
+        #         ) for page_byte_data in pages_as_bytes]
+
+        #         for future in as_completed(futures):
+        #             try:
+        #                 result = future.result()
+        #                 if result:
+        #                     results.append(result)
+        #             except Exception as e:
+        #                 print(f"Error in parallel page processing for {pdf_filename}: {e}")
+        #                 traceback.print_exc()
+
+        # Move the original PDF to the processed path after all its pages have been handled
+        # processed_path.mkdir(parents=True, exist_ok=True)
+        # shutil.move(pdf_filename, processed_path / pdf_filename)
         
-        shutil.move(pdf_path, os.path.join(processed_path, pdf))
+        # Filter out None results and return the list
         return [r for r in results if r is not None]
-        
+
     except Exception as e:
-        print(f"Error en indexing: {e}")
-        error_path = os.path.join(input_path, "Errors", os.path.basename(pdf))
-        shutil.move(pdf_path, error_path)
+        print(f"Error en indexing para {pdf_filename}: {e}")
+        traceback.print_exc()
+        
+        # Move the problematic PDF to an "Errors" folder
+        error_dir = input_path / "Errors"
+        error_dir.mkdir(parents=True, exist_ok=True)
+        shutil.move(pdf_filename, error_dir / pdf_filename)
         return []
