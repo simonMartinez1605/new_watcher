@@ -184,7 +184,7 @@ class PDFMonitorGUI(QMainWindow):
                         
                         # Verificar si ya está en nuestra lista
                         if not any(p['full_path'] == doc_path for p in self.pdf_data):
-                            if self.wait_doc(doc_path, 5, 5):
+                            if self.wait_doc(doc_path, 2, 5):
                                 lector_pdf = PdfReader(doc_path)
                                 length_pdf = len(lector_pdf.pages)
                                 # Agregar a la lista de PDFs

@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QTableWidget, QAbstractItemVi
 class Json_table(QWidget):
     def __init__(self, data_list):
         super().__init__()
-        self.setWindowTitle("Tabla con Vista Previa de PDF")
+        self.setWindowTitle("QA")
         self.resize(1600, 800)
         self.setWindowFlags(self.windowFlags() | Qt.Window)
 
@@ -53,7 +53,7 @@ class Json_table(QWidget):
 
         # PDF Preview section
         pdf_preview_layout = QVBoxLayout()
-        self.preview_label = QLabel("Seleccione un documento para ver la vista previa")
+        self.preview_label = QLabel("Select document to show preview")
         self.preview_label.setAlignment(Qt.AlignCenter)
         self.preview_label.setStyleSheet("""
             QLabel {
@@ -68,9 +68,9 @@ class Json_table(QWidget):
 
         # Navigation controls for PDF
         self.navigation_layout = QHBoxLayout()
-        self.prev_button = QPushButton("Anterior")
-        self.next_button = QPushButton("Siguiente")
-        self.page_counter_label = QLabel("Página 0 de 0")
+        self.prev_button = QPushButton("Previous")
+        self.next_button = QPushButton("Next")
+        self.page_counter_label = QLabel("Page 0 of 0")
         self.page_counter_label.setAlignment(Qt.AlignCenter)
 
         self.navigation_layout.addWidget(self.prev_button)
@@ -83,7 +83,7 @@ class Json_table(QWidget):
         self.main_layout.addLayout(self.content_layout)
 
         # Export Button
-        self.upload_button = QPushButton("Exportar")
+        self.upload_button = QPushButton("Export")
         self.upload_button.setStyleSheet("""
             QPushButton {
                 background-color: #4CAF50;
@@ -116,7 +116,7 @@ class Json_table(QWidget):
         for row_idx, item in enumerate(data_list):
             for col_idx, key in enumerate(self.headers):
                 if key == "open_pdf":
-                    btn = QPushButton("Abrir PDF")
+                    btn = QPushButton("Open PDF")
                     btn.setStyleSheet("""
                         QPushButton {
                             background-color: #4CAF50;
@@ -183,7 +183,7 @@ class Json_table(QWidget):
         """Displays the PDF preview for the selected row."""
         selected_items = self.table.selectedItems()
         if not selected_items:
-            self.preview_label.setText("Seleccione un documento para ver la vista previa")
+            self.preview_label.setText("Select document to show preview.")
             self.current_pdf_images = []
             self.current_page = 0
             self.total_pages = 0
@@ -195,7 +195,7 @@ class Json_table(QWidget):
         pdf_path = self.data[row]["pdf"]
 
         if not os.path.exists(pdf_path):
-            self.preview_label.setText("Documento PDF no encontrado.")
+            self.preview_label.setText("Document PDF not found.")
             self.current_pdf_images = []
             self.current_page = 0
             self.total_pages = 0
@@ -205,13 +205,13 @@ class Json_table(QWidget):
 
         # Optimization: Only convert PDF to images if a different PDF is selected
         if not self.current_pdf_images or (hasattr(self, '_last_previewed_pdf') and self._last_previewed_pdf != pdf_path):
-            self.preview_label.setText("Cargando vista previa...")
+            self.preview_label.setText("Loading preview...")
             QApplication.processEvents() # Update UI while loading
 
             try:
                 # Convert PDF to image (all pages)
                 # Lower DPI for faster loading if high resolution isn't strictly necessary for preview
-                images = convert_from_path(pdf_path, dpi=200, fmt='jpeg', thread_count=2) # Use more threads
+                images = convert_from_path(pdf_path, dpi=120, fmt='jpeg', thread_count=os.cpu_count()) # Use more threads
 
                 if images:
                     self.current_pdf_images = images
@@ -306,7 +306,7 @@ class Json_table(QWidget):
         """Uploads documents to SharePoint and applies OCR."""
         # This function remains unchanged as per your request
         try:
-            progress = QProgressDialog("Subiendo datos a SharePoint...", "Cancelar", 0, len(self.data), self)
+            progress = QProgressDialog("Upload data to SharePoint...", "Cancel", 0, len(self.data), self)
             progress.setWindowModality(Qt.WindowModal)
             progress.show()
 
@@ -316,7 +316,7 @@ class Json_table(QWidget):
                     break
 
                 progress.setValue(i)
-                progress.setLabelText(f"Procesando {data.get('name', 'documento')}...")
+                progress.setLabelText(f"Processing {data.get('name', 'documento')}...")
                 QApplication.processEvents() # Ensure UI updates
 
                 try:

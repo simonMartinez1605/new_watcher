@@ -433,9 +433,8 @@ def optimized_indexing(pdf_filename, option, input_path, processed_path, pages: 
             current_pdf_page_numbers = []
 
             for i, page_image in enumerate(pages_pil_images):
-                model = process_page_optimized(page_image)
-                if not model:
-                    continue
+                # if not model:
+                #     continue
 
                 # Classify (should always be "Family" if option is "FamilyClosedCases")
                 # doc_type = model.find_family_closed_cases()
@@ -445,13 +444,21 @@ def optimized_indexing(pdf_filename, option, input_path, processed_path, pages: 
 
                 # Search for metadata on each page
                 if i == 0:  # Only set metadata on the first page
+                    print(f"Processing FamilyClosedCases PDF: {pdf_filename}")
+                    model = process_page_optimized(page_image)
                     current_pdf_family_meta["name"] = search_in_doc_optimized(model, "Family", "name", option)
                     current_pdf_family_meta["case_type"] = search_in_doc_optimized(model, "Family", "case_type", option)
                     current_pdf_family_meta["pl"] = search_in_doc_optimized(model, "Family", "pl", option)
-                
-                current_pdf_family_pages.append(page_image)
-                current_pdf_page_numbers.append(f"page{i+1}")
-                print(f"Processing page {i+1} of {pdf_filename} for FamilyClosedCases.")
+                    current_pdf_family_pages.append(page_image)
+                    current_pdf_page_numbers.append(f"page{i+1}")
+                    print(f"Processing page {i+1} - {pages} of {pdf_filename} for FamilyClosedCases.")
+                    if current_pdf_family_meta["name"] is None:
+                        current_pdf_family_meta["name"] = str(uuid.uuid4())
+                        print(f"⚠️ No name found for FamilyClosedCases PDF. Using UUID: {current_pdf_family_meta['name']}")
+                else: 
+                    current_pdf_family_pages.append(page_image)
+                    current_pdf_page_numbers.append(f"page{i+1}")
+                    print(f"Processing page {i+1} - {pages} of {pdf_filename} for FamilyClosedCases.")
 
             if current_pdf_family_pages:
                 # After processing all pages for this FamilyClosedCases PDF, merge them
