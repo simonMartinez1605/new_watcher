@@ -438,23 +438,16 @@ def optimized_indexing(pdf_filename, option, input_path, processed_path, pages: 
                     continue
 
                 # Classify (should always be "Family" if option is "FamilyClosedCases")
-                doc_type = model.find_family_closed_cases()
+                # doc_type = model.find_family_closed_cases()
                 # if not doc_type:
                 #     print(f"⚠️ Page {i+1} of {pdf_filename}: Could not classify as FamilyClosedCases. Skipping for merge.")
                 #     continue
 
                 # Search for metadata on each page
-                name = search_in_doc_optimized(model, "Family", "name", option)
-                case_type = search_in_doc_optimized(model, "Family", "case_type", option)
-                pysical_location = search_in_doc_optimized(model, "Family", "pl", option)
-                
-                # Update metadata if new, non-None values are found
-                if name and name != "None":
-                    current_pdf_family_meta["name"] = regex_name(name)
-                if pysical_location != "None":
-                    current_pdf_family_meta["pl"] = pysical_location
-                if case_type != "none": # Only update if meaningful
-                    current_pdf_family_meta["case_type"] = case_type
+                if i == 0:  # Only set metadata on the first page
+                    current_pdf_family_meta["name"] = search_in_doc_optimized(model, "Family", "name", option)
+                    current_pdf_family_meta["case_type"] = search_in_doc_optimized(model, "Family", "case_type", option)
+                    current_pdf_family_meta["pl"] = search_in_doc_optimized(model, "Family", "pl", option)
                 
                 current_pdf_family_pages.append(page_image)
                 current_pdf_page_numbers.append(f"page{i+1}")
