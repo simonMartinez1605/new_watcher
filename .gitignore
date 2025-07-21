@@ -7,3 +7,5 @@ data.json
 /mods
 /dist
 /build
+/services/__pycache__
+/models/__pycache__
