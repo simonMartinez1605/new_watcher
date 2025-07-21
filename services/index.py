@@ -37,8 +37,6 @@ pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tessera
 
 poppler_path = os.getenv('POPPLER_PATH')
 
-print(poppler_path)
-
 # Global Caches and Data (Manage carefully with ProcessPoolExecutor)
 _JSON_CACHE = {} # Use a dictionary directly for cache
 
@@ -434,7 +432,7 @@ def optimized_indexing(pdf_filename, option, input_path, processed_path, pages: 
         pages_pil_images = convert_from_path(
             str(pdf_filename),
             thread_count=os.cpu_count(), # Use all CPU cores for conversion
-            dpi=80,
+            dpi=200,
             grayscale=True,
             poppler_path=fr"{poppler_path}\bin" # IMPORTANT: Update this path!
         )
@@ -442,6 +440,13 @@ def optimized_indexing(pdf_filename, option, input_path, processed_path, pages: 
         # pages_length = len(pages_pil_images)
 
         if option == "FamilyClosedCases":
+            pages_pil_images = convert_from_path(
+                str(pdf_filename),
+                thread_count=os.cpu_count(), # Use all CPU cores for conversion
+                dpi=80,
+                grayscale=True,
+                poppler_path=fr"{poppler_path}\bin" # IMPORTANT: Update this path!
+            )
             # For FamilyClosedCases, process sequentially in the main process to handle merging logic
             # This ensures pending_merges is managed correctly for a single multi-page PDF.
             current_pdf_family_pages = []
@@ -512,7 +517,7 @@ def optimized_indexing(pdf_filename, option, input_path, processed_path, pages: 
         #                 print(f"Error in parallel page processing for {pdf_filename}: {e}")
         #                 traceback.print_exc()
 
-        # Move the original PDF to the processed path after all its pages have been handled
+        # # Move the original PDF to the processed path after all its pages have been handled
         # processed_path.mkdir(parents=True, exist_ok=True)
         # shutil.move(pdf_filename, processed_path / pdf_filename)
         
