@@ -3,7 +3,7 @@ import sys
 import subprocess
 from io import BytesIO
 from PyQt5.QtCore import Qt, QSize
-from services.ocr import ocr
+from services.ocr import process_large_pdf_with_ocr as ocr
 from PyQt5.QtGui import QPixmap
 from pdf2image import convert_from_path
 from PyPDF2 import PdfReader # Import PdfReader
@@ -327,16 +327,20 @@ class Json_table(QWidget):
                 QApplication.processEvents() # Ensure UI updates
 
                 try:
-                    ocr(data['pdf'])
+                    ocr(data['pdf'], data['pdf'], 50)
                     # folder_metadata and metadata_dict creation remains here
-                    folder_metadata = {
-                        "PL": data['pl'],
-                    }
+                    # folder_metadata = {
+                    #     "PL": data['pl'],
+                    # }
+                    # metadata_dict = {
+                    #     "PL": data['pl'],
+                    #     "Case_x0020_type": data['case_type'],
+                    # }
                     metadata_dict = {
-                        "PL": data['pl'],
-                        "Case_x0020_type": data['case_type'],
+                        "CaseType": data['doc_type'],
+                        "AlienNumber": data['alien_number'],
                     }
-                    sharepoint(data['pdf'], f"{data['name']}.pdf", data['folder_name'], data['name'], metadata_dict)
+                    sharepoint(data['pdf'], f"{data['name']}-{data['doc_type']}.pdf", data['folder_name'], data['name'], metadata_dict)
                 except Exception as e:
                     # Log the error and notify the user without stopping the whole process
                     QMessageBox.warning(self, "Error de procesamiento",
