@@ -534,7 +534,7 @@ def optimized_indexing(pdf_filename, option, input_path, processed_path, pages: 
                             used_key = similar_key if similar_key else result['key']
                             pending_merges.setdefault(used_key, {
                                 "pages":[], 
-                                "meta":{"name":result['name'], "alien_number":regex_alien_number(result['alien_number']), "doc_type":result['doc_type']},
+                                "meta":{"name":result['name'], "Alien_x0020_Number":regex_alien_number(result['alien_number']), "Case_x0020_Type":result['doc_type']},
                                 "pages_number":[]
                             })
 
@@ -580,9 +580,9 @@ def optimized_indexing(pdf_filename, option, input_path, processed_path, pages: 
                         else:
                             data = {
                                     "name":regex_name(result['name']), 
-                                    "alien_number":regex_alien_number(result['alien_number']), 
+                                    "AlienNumber":regex_alien_number(result['alien_number']), 
                                     "pdf":result['pdf'],
-                                    "doc_type":result['doc_type'], 
+                                    "CaseType":result['doc_type'], 
                                     "folder_name":result['folder_name']
                                 }
                             results.append(data)

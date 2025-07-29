@@ -7,6 +7,7 @@ from shareplum import Office365
 from shareplum.site import Version
 from office365.sharepoint.client_context import ClientContext
 from office365.runtime.auth.user_credential import UserCredential
+from office365.runtime.client_request_exception import ClientRequestException
 
 load_dotenv(override=True)
 
@@ -82,7 +83,7 @@ def get_file_id(list_name, file_name, site_name, folder_name:None, authcookie) -
         print(f"HTTP error occurred: {http_err}")
     return None
 
-def create_sharepoint_folder(site_name, folder_name, metadata) -> bool:
+def create_sharepoint_folder(site_name, folder_name, metadata) -> str:
     """
     Create folder in sharepoint and upload metadata
     """
@@ -95,11 +96,43 @@ def create_sharepoint_folder(site_name, folder_name, metadata) -> bool:
         ctx.load(target_list)
         ctx.execute_query()
 
-        target_folder = target_list.root_folder.folders.add(folder_name)
+        original_folder_name = folder_name
+        counter = 0
+        unique_folder_name = original_folder_name
+
+        while True:
+            # Intentar obtener la carpeta. Si no existe, lanzará una ClientRequestException (404 Not Found).
+            try:
+                # Comprobar si la carpeta ya existe dentro de la root_folder
+                existing_folder = target_list.root_folder.folders.get_by_url(unique_folder_name)
+                ctx.load(existing_folder)
+                ctx.execute_query()
+                
+                # Si llegamos aquí, la carpeta existe, así que incrementamos el contador
+                # y generamos un nuevo nombre.
+                counter += 1
+                unique_folder_name = f"{original_folder_name}_{counter}"
+                print(f"⚠️ Folder '{original_folder_name}' already exists. Trying with '{unique_folder_name}'.")
+
+            except ClientRequestException as e:
+                # Capturamos específicamente ClientRequestException, que es la que se lanza para 404
+                if "404 Not Found" in str(e):
+                    # Si el error es 404, significa que el nombre actual es único.
+                    break 
+                else:
+                    # Si es otro tipo de ClientRequestException, relanzamos el error.
+                    break
+            except Exception as e:
+                # Capturamos cualquier otra excepción inesperada.
+                print(f"Unspect error, review folder: {e}")
+                # raise e # Relanzar para no ocultar el problema
+
+        target_folder = target_list.root_folder.folders.add(unique_folder_name)
         ctx.load(target_folder)
         ctx.execute_query()
-        print(f"✅ Folder '{folder_name}' succefully created.")
+        print(f"✅ Folder '{unique_folder_name}' succefully created.")
 
+        # Subir metadatos
         folder_item = target_folder.list_item_all_fields
         ctx.load(folder_item)
         ctx.execute_query()
@@ -108,11 +141,11 @@ def create_sharepoint_folder(site_name, folder_name, metadata) -> bool:
             folder_item.set_property(key, value)
         folder_item.update()
         ctx.execute_query()
-        print(f"✅ Metadata succefully update in'{folder_name}' folder")
-        return True
+        print(f"✅ Metadata succefully update in'{unique_folder_name}' folder")
+        return unique_folder_name
     except Exception as e: 
-        print(f"Error to create or upload metadata in folder: {folder_name}: {e}")
-        return False
+        print(f"Error to create or upload metadata in folder: {unique_folder_name}: {e}")
+        return unique_folder_name
 
 def sharepoint(file_path, file_name, site_name, folder_name:None, metadata_dict):
     """Function to upload file in the new folder"""
@@ -123,12 +156,12 @@ def sharepoint(file_path, file_name, site_name, folder_name:None, metadata_dict)
     #📂 1. Crear el folder (usando la nueva función)
     folder_created_or_exists = create_sharepoint_folder(site_name, folder_name, metadata_dict)
     if not folder_created_or_exists:
-        print(f"❌ Didn't create '{folder_name}' folder.")
+        print(f"❌ Didn't create '{folder_created_or_exists}' folder.")
         return
 
     # 📂 2. Subir el archivo dentro del nuevo folder
     # The target folder path for upload needs to include the library and the subfolder
-    target_folder_path_for_upload = f"{library_name}/{folder_name}" #Cuando se cree una carpeta
+    target_folder_path_for_upload = f"{library_name}/{folder_created_or_exists}" #Cuando se cree una carpeta
     # target_folder_path_for_upload = f"{library_name}"
 
     target_folder = site.Folder(target_folder_path_for_upload)
@@ -154,7 +187,7 @@ def sharepoint(file_path, file_name, site_name, folder_name:None, metadata_dict)
         return
 
     # 🔍 5. Obtener el file_id dinámicamente, buscando dentro del folder
-    file_id = get_file_id(list_name, file_name, site_name, folder_name, authcookie)
+    file_id = get_file_id(list_name, file_name, site_name, folder_created_or_exists, authcookie)
     if not file_id:
         print("❌ Didn't get ID to upload metadata.")
         return

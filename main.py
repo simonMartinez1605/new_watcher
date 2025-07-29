@@ -39,6 +39,7 @@ folders_to_monitor = [
     # rf"\\{path_share_folder}\42BReceipts",
     rf"\\{path_share_folder}\FamilyClosedCases",
     rf"\\{path_share_folder}\CourtPending",
+    # rf"\\{path_share_folder}\WorkPermit",
     # rf"\\{path_share_folder}\Testing",
 ]
 
