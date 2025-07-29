@@ -20,6 +20,126 @@
         "key_word":"Defensive"
     },
     {
+        "pdf":"Cancelled_interview_2016", 
+        "name":[
+            {
+                "x": -95,
+                "y": -115,
+                "width": 700,
+                "height": 100
+            }
+        ],
+        "a_number":[
+            {
+                "x": -167,
+                "y": -150,
+                "width": 338,
+                "height": 100
+            }
+        ],
+        "key_word":"Cancelled"
+    },
+    {
+        "pdf":"Cancelled_interview_2018", 
+        "name":[
+            {
+                "x": -351,
+                "y": -160,
+                "width": 800,
+                "height": 80
+            }
+        ],
+        "a_number":[
+            {
+                "x": -111,
+                "y": -185,
+                "width": 388,
+                "height": 80
+            }
+        ],
+        "key_word":"Cancelled"
+    },
+    {
+        "pdf":"Cancelled_interview_2015",
+        "name":[
+            {
+                "x": -300,
+                "y": -130,
+                "width": 800,
+                "height": 50
+            }
+        ],
+        "a_number":[
+            {
+                "x": -111,
+                "y": -185,
+                "width": 388,
+                "height": 80
+            }
+        ],
+        "key_word":"Cancelled"
+    },
+    {
+        "pdf":"Withdrawal_notice", 
+        "name":[
+            {
+                "x": -350,
+                "y": -150,
+                "width": 500,
+                "height": 50
+            }
+        ], 
+        "a_number":[
+            {
+                "x": -267,
+                "y": -185,
+                "width": 500,
+                "height": 100
+            }
+        ],
+        "key_word":"Withdrawal"
+    },
+    {
+        "pdf":"Lawful_permant_residence", 
+        "name":[
+            {
+                "x": -340,
+                "y": -150,
+                "width": 700,
+                "height": 70
+            }
+        ],
+        "a_number":[
+            {
+                "x": -251,
+                "y": -190,
+                "width": 400,
+                "height": 70
+            }
+        ],
+        "key_word":"Lawful"
+    },
+    {
+        "pdf":"Cancelled_interview_2017", 
+        "name":[
+            {
+                "x": -210,
+                "y": -140,
+                "width": 800,
+                "height": 100
+            }
+        ],
+        "a_number":[
+            {
+                "x": -480,
+                "y": -202,
+                "width": 700,
+                "height": 100
+            }
+        ], 
+        "key_word":"Cancelled"
+    },
+    {
         "pdf": "Receipt_2023", 
         "name":[
             {
@@ -64,9 +184,9 @@
         "name": [
             {
                 "x": 0,
-                "y": -410,
+                "y": -450,
                 "width": 282,
-                "height": 60
+                "height": 300
             }
         ], 
         "a_number": [
@@ -74,7 +194,7 @@
                 "x": 5,
                 "y": -450,
                 "width": 252,
-                "height": 40
+                "height": 300
             }
         ],
         "key_word":"(Printed"
@@ -85,7 +205,7 @@
             {
                 "x": -470,
                 "y": -160,
-                "width": 350,
+                "width": 600,
                 "height": 63
             }
         ],
@@ -105,7 +225,7 @@
             {
                 "x": -630,
                 "y": -600,
-                "width": 300,
+                "width": 600,
                 "height": 60
             }
         ],
@@ -155,6 +275,26 @@
                 "y": -81,
                 "width": 98,
                 "height": 18
+            }
+        ],
+        "key_word":"Please"
+    },
+    {
+        "pdf":"Notice_1", 
+        "name":[
+            {
+                "x": -195,
+                "y": -125,
+                "width": 800,
+                "height": 50
+            }
+        ],
+        "a_number":[
+            {
+                "x": -110,
+                "y": -170,
+                "width": 198,
+                "height": 50
             }
         ],
         "key_word":"Please"

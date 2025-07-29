@@ -43,6 +43,229 @@
         }
     },
     {
+        "doc_type":"Lawful_permant_residence", 
+        "anchor":"Lawful",
+        "first_coords":[
+            {
+                "x": 67,
+                "y": 0,
+                "w": 87,
+                "h": 40
+            }
+        ],
+        "first_key_word":["Perman", "Perme"], 
+        "second_coords":[
+            {
+                "x": 157,
+                "y": 0,
+                "w": 76,
+                "h": 40
+            }
+        ],
+        "second_key_words":{
+            "Residence": "Lawful_permant_residence", 
+            "Resid": "Lawful_permant_residence",
+            "Resi":"Lawful_permant_residence"
+        },
+        "except_coords":[
+            {
+                "x": -44,
+                "y": -167,
+                "w": 77,
+                "h": 28
+            }
+        ],
+        "except_key_words":{
+            "Asylum": "Lawful_permant_residence",
+            "Asy": "Lawful_permant_residence"
+        }
+    },
+    {
+        "doc_type":"Cancelled_interview_2017",
+        "anchor":"Cancelled",
+        "first_coords":[
+            {
+                "x": 0,
+                "y": -15,
+                "w": 150,
+                "h": 80
+            }
+        ],
+        "first_key_word":["Interview", "Inte"],
+        "second_coords":[
+            {
+                "x": -820,
+                "y": -190,
+                "w": 300,
+                "h": 100
+            }
+        ],
+        "second_key_words":{
+            "17": "Cancelled_interview_2017", 
+            "2017": "Cancelled_interview_2017",
+            "16": "Cancelled_interview_2016"
+        },
+        "except_coords":[
+            {
+                "x": -880,
+                "y": -197,
+                "w": 150,
+                "h": 80
+            }
+        ],
+        "except_key_words":{
+            "2017": "Cancelled_interview_2017", 
+            "17": "Cancelled_interview_2017"
+        }
+    },
+    {
+        "doc_type":"Withdrawal_notice",
+        "anchor":"Withdrawal",
+        "first_coords":[
+            {
+                "x": -550,
+                "y": 184,
+                "w": 250,
+                "h": 250
+            }
+        ],
+        "first_key_word":["Admin", "ADMINISTRATIVE"],
+        "second_coords":[
+            {
+                "x": -440,
+                "y": 184,
+                "w": 250,
+                "h": 250
+            }
+        ],
+        "second_key_words":{
+            "TERMINATIO": "Withdrawal_notice"
+        },
+        "except_coords":[
+            {
+                "x": 10,
+                "y": 0,
+                "w": 116,
+                "h": 140
+            }
+        ],
+        "except_key_words":{
+            "Term": "Withdrawal_notice"
+        }
+    },
+    {
+        "doc_type":"Cancelled_interview_2018",
+        "anchor":"Cancelled",
+        "first_coords":[
+            {
+                "x": 81,
+                "y": -1,
+                "w": 150,
+                "h": 35
+            }
+        ],
+        "first_key_word":["Intervie", "Inte"],
+        "second_coords":[
+            {
+                "x": -880,
+                "y": -170,
+                "w": 120,
+                "h": 200
+            }
+        ],
+        "second_key_words":{
+            "18": "Cancelled_interview_2018", 
+            "2018": "Cancelled_interview_2018", 
+            "2015": "Cancelled_interview_2015"
+        },
+        "except_coords":[
+            {
+                "x": -600,
+                "y": -60,
+                "w": 250,
+                "h": 50
+            }
+        ],
+        "except_key_words":{
+            "2018": "Cancelled_interview_2018", 
+            "18": "Cancelled_interview_2018"
+        }
+    },
+    {
+        "doc_type":"Cancelled_interview_2015",
+        "anchor":"Cancelled",
+        "first_coords":[
+            {
+                "x": 81,
+                "y": -1,
+                "w": 150,
+                "h": 50
+            }
+        ],
+        "first_key_word":["Intervie", "Inte"],
+        "second_coords":[
+            {
+                "x": -720,
+                "y": -109,
+                "w": 129,
+                "h": 300
+            }
+        ],
+        "second_key_words":{
+            "15": "Cancelled_interview_2015", 
+            "2015": "Cancelled_interview_2015"
+        },
+        "except_coords":[
+            {
+                "x": -673,
+                "y": -109,
+                "w": 129,
+                "h": 46
+            }
+        ],
+        "except_key_words":{
+            "2015": "Cancelled_interview_2015",
+            "15": "Cancelled_interview_2015"
+        }
+    },
+    {
+        "doc_type":"Cancelled_interview_2016",
+        "anchor":"Cancelled",
+        "first_coords":[
+            {
+                "x": 82,
+                "y": -6,
+                "w": 150,
+                "h": 35
+            }
+        ],
+        "first_key_word":["Intervie", "Inte"],
+        "second_coords":[
+            {
+                "x": -671,
+                "y": -97,
+                "w": 152,
+                "h": 35
+            }
+        ],
+        "second_key_words":{
+            "16": "Cancelled_interview_2016", 
+            "2016": "Cancelled_interview_2016"
+        },
+        "except_coords":[
+            {
+                "x": -671,
+                "y": -60,
+                "w": 250,
+                "h": 50
+            }
+        ],
+        "except_key_words":{
+            "2016": "Cancelled_interview_2016", 
+            "16": "Cancelled_interview_2016"
+        }
+    },
+    {
         "doc_type":"Evidence_notice_1",
         "anchor":"Evidence",
         "first_coords":[
@@ -116,7 +339,7 @@
         }
     },
     {
-        "doc_type":"Interview_Waiver",
+        "doc_type":"Interview_Waiver_1",
         "anchor":"Waiver",
         "first_coords":[
             {
@@ -137,7 +360,8 @@
         ],
         "second_key_words":{
             "Waiver": "Interview_Waiver_1", 
-            "Interview": "Interview_Waiver_1"
+            "Interview": "Interview_Waiver_1", 
+            "Asyl":"Interview_Waiver_1"
         }, 
         "except_coords":[
             {
@@ -253,7 +477,8 @@
             }
         ],
         "second_key_words":{
-            "Notice": "(Data)"
+            "Notice": "(Data)", 
+            "Date": "(Data)"
         },
         "except_coords":[
             {
@@ -266,6 +491,41 @@
         "except_key_words":{
             "Off": "Notice",
             "Official": "Notice"
+        }
+    },{
+        "doc_type":"Notice_1",
+        "anchor":"Please",
+        "first_coords":[
+            {
+                "x": 10,
+                "y": 30,
+                "w": 120,
+                "h": 300
+            }
+        ],
+        "first_key_word":["(Time)"],
+        "second_coords":[
+            {
+                "x": 20,
+                "y": 130,
+                "w": 80,
+                "h": 60
+            }
+        ],
+        "second_key_words":{
+            "Date": "Notice_1"
+        },
+        "except_coords":[
+            {
+                "x": -546,
+                "y": 221,
+                "w": 58,
+                "h": 43
+            }
+        ],
+        "except_key_words":{
+            "Off": "Notice_1",
+            "Official": "Notice_1"
         }
     },
     {
@@ -304,7 +564,7 @@
         }
     },
     {
-        "doc_type": "Receipts Asylum", 
+        "doc_type": "Receipts_Asylum", 
         "anchor":"Page", 
         "first_coords":[
             {
@@ -325,7 +585,8 @@
         ],
         "second_key_words":{
             "Page1": "Receipts1", 
-            "Page2": "Receipts2"
+            "Page2": "Receipts2", 
+            "Page2o0f2":"Receipts2"
             
         },
         "except_coords":[
@@ -339,6 +600,7 @@
         "except_key_words":{
             "PageL": "Receipts1",
             "Pagelof2": "Receipts1", 
+            "Pagelof":"Receipts1",
             "Page2of2": "Receipts2",
             "Page1": "Receipts1",
             "Page2": "Receipts2"
