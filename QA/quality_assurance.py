@@ -328,32 +328,21 @@ class Json_table(QWidget):
 
                 try:
                     ocr(data['pdf'], data['pdf'], 50)
-                    # folder_metadata and metadata_dict creation remains here
-                    # folder_metadata = {
-                    #     "PL": data['pl'],
-                    # }
-                    # metadata_dict = {
-                    #     "PL": data['pl'],
-                    #     "Case_x0020_type": data['case_type'],
-                    # }
-                    metadata_dict = {
-                        "CaseType": data['doc_type'],
-                        "AlienNumber": data['alien_number'],
-                    }
-                    sharepoint(data['pdf'], f"{data['name']}-{data['doc_type']}.pdf", data['folder_name'], data['name'], metadata_dict)
+                    metadata_dict = {}
+                    for key, value in data.items():
+                        if key != "name" and key != "pdf" and key != "folder_name":
+                            metadata_dict.update({key: value})
+                    sharepoint(data['pdf'], f"{data['name']}.pdf", data['folder_name'], data['name'], metadata_dict)
                 except Exception as e:
                     # Log the error and notify the user without stopping the whole process
-                    QMessageBox.warning(self, "Error de procesamiento",
-                                        f"Error al procesar el documento {data.get('name', 'desconocido')}: {e}")
+                    QMessageBox.warning(self, "Error de procesamiento",f"Error al procesar el documento {data.get('name', 'desconocido')}: {e}")
                     print(f"Error al procesar el documento {data.get('name', 'desconocido')}: {e}")
                     # Optionally, you might want to mark this item as failed in self.data or a separate list
-
             progress.close()
             # Only close the window if the upload wasn't cancelled or had critical errors
             if not progress.wasCanceled():
                 QMessageBox.information(self, "Carga completa", "Todos los documentos han sido procesados y subidos.")
                 self.close()
-
         except Exception as e:
             QMessageBox.critical(self, "Error de carga global", f"Ocurrió un error inesperado durante la carga: \n{str(e)}")
             print(f"Error al cargar documentos: {e}")

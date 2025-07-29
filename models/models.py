@@ -37,12 +37,12 @@ def search_status(doc_config, coord_x, coord_y, anchor, item) -> str | None:
         # print(f"Anchor found: {anchor}")
         # Buscar en coordenadas normales
         status = search_in_coords(doc_config['second_coords'], coord_x, coord_y, item)
-        # print(status)
         value = extrct_value(status, doc_config.get("second_key_words", {}))
         if value:
             return value
         # Luego buscar en coordenadas de excepción
         status = search_in_coords(doc_config['except_coords'], coord_x, coord_y, item)
+        # print(f"Anchor: {doc_config['anchor']}, Find:{status}, DocType :{doc_config['doc_type']}")
         return extrct_value(status, doc_config.get("except_key_words", {}))
 
 #MODULO A MEJORAR
@@ -78,7 +78,7 @@ class Model():
                 x,y = self.data_ocr['left'][i], self.data_ocr['top'][i]
                 # print(f"Word: {word}, Key: {key_word}")
                 if key_word == word:
-
+                    # print(f"{key_word} ==== {word}")
                     region_x = x + region_x
                     region_y = y + region_y
 
@@ -102,6 +102,7 @@ class Model():
 
                     # print(f"Text extract: {"".join(text)}", f"X: {region_x - x}", f"Y: {region_y - y}")
 
+                    # print(f" ".join(text), f"{key_word}")
                     # print(f" ".join(text))
 
                     return " ".join(text)  # Devolver como una sola línea de texto                
@@ -152,27 +153,24 @@ class Model():
                     # print(f"word: {word}, anchor: {doc_config['anchor']}")
                     if word != doc_config['anchor']:
                         continue
-
                     # print(f"word: {word}, coord_x: {self.data_ocr['left'][i]}, coord_y: {self.data_ocr['top'][i]}")
-                    
                     coord_x = self.data_ocr['left'][i]
                     coord_y = self.data_ocr['top'][i]
                     search_word = search_in_coords(doc_config['first_coords'], coord_x, coord_y, self.item)
-
                     # print(f"search_word: {search_word} Word: {word}")
                     # print(search_word)
                     # print(doc_config['anchor'])
-
                     for key_word in doc_config['first_key_word']:
+                        # print(f"key_word: {key_word}, search_word: {search_word}, {doc_config['doc_type']}")
                         if key_word not in search_word:
                             # print(f"key_word: {key_word}, search_word: {search_word}")
                             continue
-                    
                     resultado = search_status(doc_config, coord_x, coord_y, word, self.item)
+                    # print(resultado)
                     if resultado:
                         results.append(resultado)
                         break  # Si ya encontró uno, no necesita seguir con las demás definiciones
-            print(f"Results: {results}")
+            # print(f"Results: {results}")
             return results[0] if results else None
         except Exception as e:
             print(f"Error in asylum search module: {e}")
