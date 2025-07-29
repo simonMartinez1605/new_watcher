@@ -471,7 +471,7 @@ def optimized_indexing(pdf_filename, option, input_path, processed_path, pages: 
                 poppler_path=fr"{poppler_path}\bin" # IMPORTANT: Update this path!
             )
             current_pdf_family_pages = []
-            current_pdf_family_meta = {"name": "", "Alien_x0020__x0023_": "", "PL": ""}
+            current_pdf_family_meta = {"name": "", "Alien_x0020__x0023_": "", "PL": "", "Upload_x0020_mycase":""}
             current_pdf_page_numbers = []
 
             for i, page_image in enumerate(pages_pil_images):
@@ -483,7 +483,7 @@ def optimized_indexing(pdf_filename, option, input_path, processed_path, pages: 
                     current_pdf_family_meta["name"] = search_in_doc_optimized(model, "CourtPending", "name", option)
                     current_pdf_family_meta["Alien_x0020__x0023_"] = search_in_doc_optimized(model, "CourtPending", "alien_number", option)
                     current_pdf_family_meta["PL"] = search_in_doc_optimized(model, "CourtPending", "pl", option)
-                    # current_pdf_family_meta["Upload_x0020_mycase"] = search_in_doc_optimized(model, "CourtPending", "uploaded", option)
+                    current_pdf_family_meta["Upload_x0020_mycase"] = search_in_doc_optimized(model, "CourtPending", "uploaded", option)
 
                     current_pdf_family_pages.append(page_image)
                     current_pdf_page_numbers.append(f"page{i+1}")
