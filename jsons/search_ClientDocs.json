@@ -1,0 +1,145 @@
+[
+    {
+        "doc_type":"Approval_notice", 
+        "anchor":"Approval", 
+        "first_coords":[
+            {
+                "x": 100,
+                "y": 0,
+                "w": 120,
+                "h": 40
+            }
+        ], 
+        "first_key_word":["Notice"], 
+        "second_coords":[
+            {
+                "x": -280,
+                "y": -200,
+                "w": 150,
+                "h": 50
+            }
+        ],
+        "second_key_words":{
+            "EMPLOY":"Approval_notice"
+        }, 
+        "except_coords":[
+            {
+                "x": -120,
+                "y": -200,
+                "w": 150,
+                "h": 50
+            }
+        ],
+        "except_key_words":{
+            "AUTHORIZA":"Approval_notice"
+        }
+    }, 
+    {
+        "doc_type":"Notice_to_Applicants", 
+        "anchor":"PAGE", 
+        "first_coords":[
+            {
+                "x": -530,
+                "y": -100,
+                "w": 170,
+                "h": 50
+            }
+        ], 
+        "first_key_word":["EMPLOYMENT"], 
+        "second_coords":[
+            {
+                "x": -1180,
+                "y": -110,
+                "w": 180,
+                "h": 60
+            }
+        ], 
+        "second_key_words":{
+            "Applicant":"Notice_to_Applicants", 
+            "Appointment":"Appointment"
+        }, 
+        "except_coords":[
+            {
+                "x": -365,
+                "y": -100,
+                "w": 180,
+                "h": 50
+            }
+        ], 
+        "except_key_words":{
+            "AUTHORIZATION":"Notice_to_Applicants"
+        }
+    }, 
+    {
+        "doc_type":"Payment", 
+        "anchor":"PAYMENT", 
+        "first_coords":[
+            {
+                "x": -1000,
+                "y": -212,
+                "w": 100,
+                "h": 30
+            }
+        ], 
+        "first_key_word":["Receipt"], 
+        "second_coords":[
+            {
+                "x": 100,
+                "y": -5,
+                "w": 180,
+                "h": 50
+            }
+        ], 
+        "second_key_words":{
+            "INFORMATION":"Payment"
+        }, 
+        "except_coords":[
+            {
+                "x": -640,
+                "y": -170,
+                "w": 170,
+                "h": 50
+            }
+        ], 
+        "except_key_words":{
+            "Authorization":"Payment", 
+            "Authoriza":"Payment"
+        }
+    }, 
+    {
+        "doc_type":"Appointment", 
+        "anchor":"Appointment", 
+        "first_coords":[
+            {
+                "x": 520,
+                "y": -5,
+                "w": 100,
+                "h": 30
+            }
+        ], 
+        "first_key_word":["EMPLOYMENT"], 
+        "second_coords":[
+            {
+                "x": 70,
+                "y": -5,
+                "w": 100,
+                "h": 50
+            }
+        ], 
+        "second_key_words":{
+            "Notice":"Payment"
+        }, 
+        "except_coords":[
+            {
+                "x": 640,
+                "y": -5,
+                "w": 170,
+                "h": 50
+            }
+        ], 
+        "except_key_words":{
+            "Authorization":"Appointment", 
+            "EMPLOYME":"Appointment"
+        }
+    }
+]

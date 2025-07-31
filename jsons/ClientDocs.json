@@ -1,0 +1,82 @@
+[
+    {
+        "pdf":"Approval_notice", 
+        "name": [
+            {
+                "x": -550,
+                "y": -120,
+                "width": 400,
+                "height": 50
+            }
+        ],
+        "a_number":[
+            {
+                "x": -470,
+                "y": -150,
+                "width": 150,
+                "height": 30
+            }
+        ],
+        "key_word":"Approval"
+    }, 
+    {
+        "pdf":"Notice_to_Applicants", 
+        "name":[
+            {
+                "x": -1250,
+                "y": 50,
+                "width": 650,
+                "height": 50
+            }
+        ], 
+        "a_number":[
+            {
+                "x": -240,
+                "y": -50,
+                "width": 156,
+                "height": 50
+            }
+        ], 
+        "key_word":"PAGE"
+    },
+    {
+        "pdf":"Payment", 
+        "name":[
+            {
+                "x": -860,
+                "y": 12,
+                "width": 463,
+                "height": 50
+            }
+        ], 
+        "a_number":[
+            {
+                "x": 70,
+                "y": -160,
+                "width": 156,
+                "height": 50
+            }
+        ], 
+        "key_word":"PAYMENT"
+    }, 
+    {
+        "pdf":"Appointment",
+        "name":[
+            {
+                "x": -1250,
+                "y": 40,
+                "width": 650,
+                "height": 50
+            }
+        ], 
+        "a_number":[
+            {
+                "x": -240,
+                "y": -50,
+                "width": 156,
+                "height": 50
+            }
+        ], 
+        "key_word":"PAGE"
+    }
+]

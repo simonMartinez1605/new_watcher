@@ -238,10 +238,16 @@ def exect_funct_optimized_single_page(doc_type: str, page_image: Image.Image, op
     doc_config = {
         "42BReceipts": {
             "Payment": ("Payment", 1, "Payment", "page1"),
-            "Receipts1": ("Receipts_42B", 2, "Receipts", "page1"), # sheets_quantity 2 implies multi-page, but here it's processed as single
-            "Receipts2": ("Receipts_42B", 2, "Receipts", "page2"), # sheets_quantity 2 implies multi-page, but here it's processed as single
+            "Receipts1": ("Receipts_42B", 2, "Receipts", "page1"),
+            "Receipts2": ("Receipts_42B", 2, "Receipts", "page2"),
             "Appointment": ("Appointment_42B", 1, "Appointment", "page1"),
             "Reused": ("Reused_42B", 1, "Reused", "page1"),
+        },
+        "ClientDocs":{
+            "Approval_notice":("Approval_notice", 1, "Approval_notice", "Page1"), 
+            "Notice_to_Applicants":("Notice_to_Applicants", 1, "Notice_to_Applicants", "Page1"),
+            "Payment":("Payment",1,"Payment", "Page1"), 
+            "Appointment":("Appointment", 1, "Appointment", "Page1")
         },
         "Asylum": {
             "Lack_notice": ("Lack_notice", 1, "Lack_notice", "page1"),
@@ -362,6 +368,7 @@ def process_single_page_for_pool(page_data: tuple[bytes, int], option: str, proc
         classification_functions = {
             "42BReceipts": model.find_receipts,
             "Asylum": model.find_receipts_asylum,
+            "ClientDocs":model.find_receipts_work_permit
             # FamilyClosedCases classification is handled in the main process
         }
 
@@ -534,7 +541,7 @@ def optimized_indexing(pdf_filename, option, input_path, processed_path, pages: 
                             used_key = similar_key if similar_key else result['key']
                             pending_merges.setdefault(used_key, {
                                 "pages":[], 
-                                "meta":{"name":result['name'], "Alien_x0020_Number":regex_alien_number(result['alien_number']), "Case_x0020_Type":result['doc_type']},
+                                "meta":{"name":result['name'], "AlienNumber":regex_alien_number(result['alien_number']), "CaseType":result['doc_type']},
                                 "pages_number":[]
                             })
 
@@ -564,32 +571,27 @@ def optimized_indexing(pdf_filename, option, input_path, processed_path, pages: 
                                 )
                                 del pending_merges[used_key]  # Remove the key after merging
                                 results.append(merged)
-                            # else: 
-                            #     output_pdf_name = f"{result['name']}.pdf"
-                            #     output_pdf_path = processed_path / output_pdf_name
-
-                            #     page_image.convert('RGB').save(output_pdf_path, save_all=True)
-                            #     data = {
-                            #         "name":regex_name(result['name']), 
-                            #         "alien_number":regex_alien_number(result['alien_number']), 
-                            #         "pdf":output_pdf_path, 
-                            #         "doc_type":result['doc_type'], 
-                            #         "folder_nmae":result['folder_name']
-                            #     }
-                            #     results.append(data)
                         else:
+                            #Informacion para los documentos de WorkPermit
                             data = {
                                     "name":regex_name(result['name']), 
-                                    "AlienNumber":regex_alien_number(result['alien_number']), 
+                                    "A_x0020_Number":regex_alien_number(result['alien_number']), 
                                     "pdf":result['pdf'],
-                                    "CaseType":result['doc_type'], 
+                                    "Case_x0020_Type":result['doc_type'],
                                     "folder_name":result['folder_name']
                                 }
+                            # data = {
+                            #         "name":regex_name(result['name']), 
+                            #         "AlienNumber":regex_alien_number(result['alien_number']), 
+                            #         "pdf":result['pdf'],
+                            #         "CaseType":result['doc_type'],
+                            #         "folder_name":result['folder_name']
+                            #     }
                             results.append(data)
                     except Exception as e:
                         print(f"Error in parallel page processing for {pdf_filename}: {e}")
                         traceback.print_exc()
-        # # Move the original PDF to the processed path after all its pages have been handled
+        # Move the original PDF to the processed path after all its pages have been handled
         processed_path.mkdir(parents=True, exist_ok=True)
         shutil.move(pdf_filename, processed_path / pdf_filename)
         

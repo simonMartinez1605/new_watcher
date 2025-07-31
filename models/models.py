@@ -38,6 +38,7 @@ def search_status(doc_config, coord_x, coord_y, anchor, item) -> str | None:
         # Buscar en coordenadas normales
         status = search_in_coords(doc_config['second_coords'], coord_x, coord_y, item)
         value = extrct_value(status, doc_config.get("second_key_words", {}))
+        # print(f"Anchor: {doc_config['anchor']}, Find:{status}, DocType :{doc_config['doc_type']}")
         if value:
             return value
         # Luego buscar en coordenadas de excepción
@@ -176,35 +177,37 @@ class Model():
             print(f"Error in asylum search module: {e}")
             return False
         
-    def find_family_closed_cases(self) -> str:
+    def find_receipts_work_permit(self) -> str:
         """Busca el tipo de documento utilizando coordenadas y palabras clave definidas en un JSON."""
         try:
-            json_path = "jsons/search_FamilyClosedCases.json"
+            json_path = "jsons/search_ClientDocs.json"
             doc_definitions = load_json_cached(json_path)  # Es una lista
             results = []
 
             for doc_config in doc_definitions:  # Iteramos sobre cada objeto del JSON
                 for i, word in enumerate(self.data_ocr['text']):
-                    # print(word)
+                    # print(f"word: {word}, anchor: {doc_config['anchor']}")
                     if word != doc_config['anchor']:
                         continue
-
+                    # print(f"word: {word}, coord_x: {self.data_ocr['left'][i]}, coord_y: {self.data_ocr['top'][i]}")
                     coord_x = self.data_ocr['left'][i]
                     coord_y = self.data_ocr['top'][i]
                     search_word = search_in_coords(doc_config['first_coords'], coord_x, coord_y, self.item)
-
+                    # print(f"search_word: {search_word} Word: {word}")
                     # print(search_word)
-
+                    # print(doc_config['anchor'])
                     for key_word in doc_config['first_key_word']:
+                        # print(f"key_word: {key_word}, search_word: {search_word}, anchor: {doc_config['doc_type']}")
                         if key_word not in search_word:
+                            # print(f"key_word: {key_word}, search_word: {search_word}")
                             continue
-                    
                     resultado = search_status(doc_config, coord_x, coord_y, word, self.item)
+                    # print(resultado)
                     if resultado:
                         results.append(resultado)
                         break  # Si ya encontró uno, no necesita seguir con las demás definiciones
             # print(f"Results: {results}")
             return results[0] if results else None
         except Exception as e:
-            print(f"Error in family closed cases search module: {e}")
+            print(f"Error in asylum search module: {e}")
             return False

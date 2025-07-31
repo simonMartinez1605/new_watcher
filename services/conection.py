@@ -153,7 +153,9 @@ def sharepoint(file_path, file_name, site_name, folder_name:None, metadata_dict)
     authcookie = Office365(sharepoint_url, username=username, password=password).GetCookies()
     site = Site(f"{sharepoint_url}/sites/{site_name}", version=Version.v365, authcookie=authcookie)
 
-    #📂 1. Crear el folder (usando la nueva función)
+    # folder_created_or_exists = folder_name
+
+    # 📂 1. Crear el folder (usando la nueva función)
     folder_created_or_exists = create_sharepoint_folder(site_name, folder_name, metadata_dict)
     if not folder_created_or_exists:
         print(f"❌ Didn't create '{folder_created_or_exists}' folder.")
