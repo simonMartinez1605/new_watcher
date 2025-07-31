@@ -2,13 +2,13 @@ import os
 import sys
 import subprocess
 from io import BytesIO
-from PyQt5.QtCore import Qt, QSize
-from services.ocr import process_large_pdf_with_ocr as ocr
+from PyQt5.QtCore import Qt
+from PyPDF2 import PdfReader
 from PyQt5.QtGui import QPixmap
 from pdf2image import convert_from_path
-from PyPDF2 import PdfReader # Import PdfReader
 from services.conection import sharepoint
 from QA.upperCaseDelegate import UpperCaseDelegate
+from services.ocr import process_large_pdf_with_ocr as ocr
 from PyQt5.QtWidgets import (QWidget, QHBoxLayout, QTableWidget, QAbstractItemView,
                              QLabel, QPushButton, QTableWidgetItem, QVBoxLayout,
                              QProgressDialog, QApplication, QMessageBox, QSizePolicy)

@@ -26,8 +26,6 @@ load_dotenv(dotenv_path=dotenv_path)
 
 path_share_folder = os.getenv('PATH_SHARE_FOLDER')
 
-# print(f"Path to share folder: {path_share_folder}")
-
 console = Console()
 
 # Configuración de la conexión a la carpeta compartida dentro del servidor

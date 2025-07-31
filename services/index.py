@@ -72,14 +72,6 @@ def preprocess_image(image: Image.Image) -> Image.Image:
     """Mejora la imagen para OCR. Already returns grayscale."""
     return image.filter(ImageFilter.SHARPEN).convert('L') # Convert to grayscale directly after sharpen
 
-def needs_deskewing(image: np.ndarray) -> bool:
-    """Determina si la imagen necesita corrección de inclinación.
-    
-    Implementación básica - puedes mejorarla con detección de bordes o un modelo de ML.
-    """
-
-    return True
-# --- Core Processing Functions ---
 def process_page_optimized(page_image: Image.Image) -> Model | None:
     """Versión optimizada del procesamiento de página para OCR.
     
@@ -97,9 +89,9 @@ def process_page_optimized(page_image: Image.Image) -> Model | None:
         open_cv_image = open_cv_image[:, :, ::-1].copy() # Convert from RGB to BGR (OpenCV's default color order)
 
         # Deskewing condicional
-        if needs_deskewing(open_cv_image):
-            open_cv_image = deskew_image(open_cv_image)
-            open_cv_image = open_cv_image[:, :, ::-1] # Convert BGR back to RGB
+        
+        open_cv_image = deskew_image(open_cv_image)
+        open_cv_image = open_cv_image[:, :, ::-1] # Convert BGR back to RGB
 
         # Configuration optimized for Tesseract
         custom_config = r'--oem 3 --psm 6'
@@ -309,7 +301,6 @@ def exect_funct_optimized_single_page(doc_type: str, page_image: Image.Image, op
                 "pdf":output_pdf_path
             }
             return result
-            return save_single_page_pdf(page_image, result, processed_path, option)
 
         type_name, sheets_quantity, kind_of_doc, page_number_str = config # page_number_str is not used for saving single page
 
@@ -335,7 +326,6 @@ def exect_funct_optimized_single_page(doc_type: str, page_image: Image.Image, op
         }
 
         return result
-        return save_single_page_pdf(page_image, result, processed_path, option)
 
     except Exception as e:
         print(f"❌ Error en exect_funct_optimized_single_page: {e}")
@@ -573,27 +563,27 @@ def optimized_indexing(pdf_filename, option, input_path, processed_path, pages: 
                                 results.append(merged)
                         else:
                             #Informacion para los documentos de WorkPermit
-                            data = {
-                                    "name":regex_name(result['name']), 
-                                    "A_x0020_Number":regex_alien_number(result['alien_number']), 
-                                    "pdf":result['pdf'],
-                                    "Case_x0020_Type":result['doc_type'],
-                                    "folder_name":result['folder_name']
-                                }
                             # data = {
                             #         "name":regex_name(result['name']), 
-                            #         "AlienNumber":regex_alien_number(result['alien_number']), 
+                            #         "A_x0020_Number":regex_alien_number(result['alien_number']), 
                             #         "pdf":result['pdf'],
-                            #         "CaseType":result['doc_type'],
+                            #         "Case_x0020_Type":result['doc_type'],
                             #         "folder_name":result['folder_name']
                             #     }
+                            data = {
+                                    "name":regex_name(result['name']), 
+                                    "AlienNumber":regex_alien_number(result['alien_number']), 
+                                    "pdf":result['pdf'],
+                                    "CaseType":result['doc_type'],
+                                    "folder_name":result['folder_name']
+                                }
                             results.append(data)
                     except Exception as e:
                         print(f"Error in parallel page processing for {pdf_filename}: {e}")
                         traceback.print_exc()
         # Move the original PDF to the processed path after all its pages have been handled
-        processed_path.mkdir(parents=True, exist_ok=True)
-        shutil.move(pdf_filename, processed_path / pdf_filename)
+        # processed_path.mkdir(parents=True, exist_ok=True)
+        # shutil.move(pdf_filename, processed_path / pdf_filename)
         
         return [r for r in results if r is not None]
 

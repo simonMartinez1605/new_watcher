@@ -1,11 +1,9 @@
 import os
-import sys
-import platform
+import shutil
+import tempfile
 import ocrmypdf
 from pypdf import PdfReader, PdfWriter
 from concurrent.futures import ProcessPoolExecutor, as_completed
-import tempfile
-import shutil # Para manejar directorios temporales
 
 # Tu función OCR existente
 def ocr_single_document(input_path: str, output_path: str) -> str:
@@ -152,4 +150,3 @@ def process_large_pdf_with_ocr(input_large_pdf: str, output_final_pdf: str, page
         print(f"OCR proccess complete: '{input_large_pdf}'. Results in '{output_final_pdf}'")
     else:
         print(f"OCR proccess failed: '{input_large_pdf}'.")
-

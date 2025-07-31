@@ -165,7 +165,7 @@
             {
                 "x": -470,
                 "y": -125,
-                "width": 298,
+                "width": 480,
                 "height": 60
             }
         ], 
@@ -183,10 +183,10 @@
         "pdf": "Interview_Waiver_2",
         "name": [
             {
-                "x": 0,
-                "y": -450,
-                "width": 282,
-                "height": 300
+                "x": -10,
+                "y": -420,
+                "width": 480,
+                "height": 50
             }
         ], 
         "a_number": [
@@ -194,7 +194,7 @@
                 "x": 5,
                 "y": -450,
                 "width": 252,
-                "height": 300
+                "height": 50
             }
         ],
         "key_word":"(Printed"
