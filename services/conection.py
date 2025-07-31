@@ -60,6 +60,7 @@ def sharepoint(file_path, file_name, site_name, folder_name:None, metadata_dict)
                     except Exception as e:
                         # Capturamos cualquier otra excepción inesperada.
                         print(f"Unspect error, review folder: {e}")
+                        return False
                         # raise e # Relanzar para no ocultar el problema
                         
                 target_folder = target_list.root_folder.folders.add(unique_folder_name)
@@ -101,10 +102,15 @@ def sharepoint(file_path, file_name, site_name, folder_name:None, metadata_dict)
         file_item.update()
         ctx.execute_query()
         print(f"✅ File metadata '{file_name}' succefully update.")
+
+        return True
         
     except FileNotFoundError:
         print(f"❌ Error: File '{file_path}' didn't find.")
+        return False
     except ClientRequestException as e:
         print(f"❌ Error with SharePoint: {e}")
+        return False
     except Exception as e:
         print(f"❌ Unspect error: {e}")
+        return False

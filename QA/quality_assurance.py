@@ -1,7 +1,10 @@
 import os
 import sys
+import uuid
+import smbclient
 import subprocess
 from io import BytesIO
+from pathlib import Path
 from PyQt5.QtCore import Qt
 from PyPDF2 import PdfReader
 from PyQt5.QtGui import QPixmap
@@ -330,9 +333,17 @@ class Json_table(QWidget):
                     ocr(data['pdf'], data['pdf'], 50)
                     metadata_dict = {}
                     for key, value in data.items():
-                        if key != "name" and key != "pdf" and key != "folder_name":
+                        if key != "name" and key != "pdf" and key != "folder_name" and key != "main_pdf" and key != "main_folder_path":
                             metadata_dict.update({key: value})
-                    sharepoint(data['pdf'], f"{data['name']}.pdf", data['folder_name'], data['name'], metadata_dict)
+                    upload = sharepoint(data['pdf'], f"{data['name']}.pdf", data['folder_name'], data['name'], metadata_dict)
+
+                    if upload == False:
+                        doc_name = uuid.uuid4()
+                        smbclient.rename(data['main_pdf'],Path(data['main_folder_path']) / "Errors" / f"{doc_name}.pdf")
+                        print(f"❌ Error to process the document. Document save in {Path(data['main_folder_path'])}/Errors/{doc_name}.pdf")
+
+                    smbclient.rename(data['main_pdf'],Path(data['main_folder_path']) / "Done" / f"{uuid.uuid4()}.pdf")
+                    print(f"✅ Document succefully procesed")
                 except Exception as e:
                     # Log the error and notify the user without stopping the whole process
                     QMessageBox.warning(self, "Error de procesamiento",f"Error al procesar el documento {data.get('name', 'desconocido')}: {e}")

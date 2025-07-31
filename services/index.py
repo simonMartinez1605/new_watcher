@@ -10,14 +10,14 @@ import pytesseract
 from io import BytesIO
 from pathlib import Path
 from dotenv import load_dotenv
-from models.models import Model  
+from models.models import Model
 from PIL import Image, ImageFilter
 from services.merge import merge_pages
 from pdf2image import convert_from_path
-from services.deskewing import deskew_image  
-from services.compare_keys import find_similar_key  
+from services.deskewing import deskew_image
+from services.compare_keys import find_similar_key
 from errors.errors import regex_name, regex_alien_number
-from concurrent.futures import ProcessPoolExecutor, as_completed, ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, as_completed
 
 # --- Configuration ---
 def get_base_path() -> Path:
@@ -423,7 +423,7 @@ def optimized_indexing(pdf_filename, option, input_path, processed_path, pages: 
             # For FamilyClosedCases, process sequentially in the main process to handle merging logic
             # This ensures pending_merges is managed correctly for a single multi-page PDF.
             current_pdf_family_pages = []
-            current_pdf_family_meta = {"name": "unknown", "PL": "", "Case_x0020_type": str(uuid.uuid4())}
+            current_pdf_family_meta = {"name": "unknown", "PL": "", "Case_x0020_type": str(uuid.uuid4()), "main_pdf":pdf_filename, "main_folder_path":input_path}
             current_pdf_page_numbers = []
 
             for i, page_image in enumerate(pages_pil_images):
