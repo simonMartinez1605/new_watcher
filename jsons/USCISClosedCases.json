@@ -1,0 +1,38 @@
+[
+    {
+        "pdf":"USCIS", 
+        "name":[
+            {
+                "x": 43,
+                "y": 130,
+                "width": 270,
+                "height": 68
+            }
+        ], 
+        "alien_number":[
+            {
+                "x": 43,
+                "y": 251,
+                "width": 270,
+                "height": 68
+            }
+        ], 
+        "phone":[
+            {
+                "x": 43,
+                "y": 200,
+                "width": 381,
+                "height": 56
+            }
+        ], 
+        "case_type":[
+            {
+                "x": -15,
+                "y": 330,
+                "width": 95,
+                "height": 60
+            }
+        ], 
+        "key_word":"USCIS"
+    }
+]

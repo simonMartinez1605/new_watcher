@@ -165,13 +165,13 @@ class Json_table(QWidget):
             pass # Keep as string if conversion fails
 
         self.data[row][key] = new_value
-        print(f"Update: Fila {row + 1}, Columna '{key}' => {new_value}")
+        print(f"Update: Row {row + 1}, Column '{key}' => {new_value}")
 
     def open_pdf(self, row):
         """Opens the PDF file associated with the selected row."""
         pdf_path = self.data[row]["pdf"]
         if not os.path.exists(pdf_path):
-            QMessageBox.warning(self, "Error al abrir PDF", f"El archivo PDF no se encontró en: {pdf_path}")
+            QMessageBox.warning(self, "Error to open the PDF", f"The file did'nt found in: {pdf_path}")
             return
 
         try:
@@ -182,7 +182,7 @@ class Json_table(QWidget):
             else:
                 subprocess.run(["xdg-open", pdf_path])
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"No se pudo abrir el archivo PDF: {e}")
+            QMessageBox.critical(self, "Error", f"Can't open the file: {e}")
 
     def show_pdf_preview(self):
         """Displays the first page of the PDF preview for the selected row and shows total pages."""
@@ -230,12 +230,12 @@ class Json_table(QWidget):
                     self.current_page_display = 0 # Always display the first page (index 0)
                     self.show_first_page_image()
                 else:
-                    self.preview_label.setText("No se pudo cargar la primera página del PDF.")
+                    self.preview_label.setText("Dindnt load the first page.")
                     self.current_pdf_first_page_image = None
                     self.current_pdf_path = None
                     self.total_pages = 0
             except Exception as e:
-                self.preview_label.setText(f"Error al cargar la vista previa:\n{str(e)}")
+                self.preview_label.setText(f"Error to show preview:\n{str(e)}")
                 self.current_pdf_first_page_image = None
                 self.current_pdf_path = None
                 self.total_pages = 0
@@ -249,7 +249,7 @@ class Json_table(QWidget):
     def show_first_page_image(self):
         """Displays the stored first page image of the current PDF preview."""
         if not self.current_pdf_first_page_image:
-            self.preview_label.setText("No hay página para mostrar.")
+            self.preview_label.setText("Any page to show.")
             return
 
         try:
@@ -288,7 +288,7 @@ class Json_table(QWidget):
     def update_page_counter(self):
         """Updates the page counter label."""
         # For preview, it will always show "Page 1 of X"
-        self.page_counter_label.setText(f"Página {self.current_page_display + 1} de {self.total_pages}")
+        self.page_counter_label.setText(f"Page {self.current_page_display + 1} of {self.total_pages}")
 
     def update_navigation_buttons(self):
         """Disables navigation buttons as only the first page is shown."""
@@ -322,7 +322,7 @@ class Json_table(QWidget):
 
             for i, data in enumerate(self.data, 1):
                 if progress.wasCanceled():
-                    QMessageBox.warning(self, "Carga cancelada", "La carga de documentos ha sido cancelada por el usuario.")
+                    QMessageBox.warning(self, "Upload Canceled", "The user canceled upload")
                     break
 
                 progress.setValue(i)
@@ -352,8 +352,8 @@ class Json_table(QWidget):
             progress.close()
             # Only close the window if the upload wasn't cancelled or had critical errors
             if not progress.wasCanceled():
-                QMessageBox.information(self, "Carga completa", "Todos los documentos han sido procesados y subidos.")
+                QMessageBox.information(self, "Complete", "All of the documents already upload to sharepoint")
                 self.close()
         except Exception as e:
-            QMessageBox.critical(self, "Error de carga global", f"Ocurrió un error inesperado durante la carga: \n{str(e)}")
-            print(f"Error al cargar documentos: {e}")
+            QMessageBox.critical(self, "Error", f"Unspect error to load documents: \n{str(e)}")
+            print(f"Error to load documents: {e}")

@@ -31,8 +31,6 @@ BASE_PATH = get_base_path()
 DOTENV_PATH = BASE_PATH / '.env'
 load_dotenv(dotenv_path=DOTENV_PATH)
 
-# Set Tesseract command path
-# Make sure this path is correct for your environment
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 poppler_path = os.getenv('POPPLER_PATH')
@@ -468,7 +466,7 @@ def optimized_indexing(pdf_filename, option, input_path, processed_path, pages: 
                 poppler_path=fr"{poppler_path}\bin" # IMPORTANT: Update this path!
             )
             current_pdf_family_pages = []
-            current_pdf_family_meta = {"name": "", "Alien_x0020__x0023_": "", "PL": "", "Upload_x0020_mycase":""}
+            current_pdf_family_meta = {"name": "", "Alien_x0020__x0023_": "", "PL": "", "Upload_x0020_mycase":"", "main_pdf":pdf_filename, "main_folder_path":input_path}
             current_pdf_page_numbers = []
 
             for i, page_image in enumerate(pages_pil_images):
@@ -507,6 +505,54 @@ def optimized_indexing(pdf_filename, option, input_path, processed_path, pages: 
             else:
                 print(f"No pages collected for merging for {pdf_filename} in FamilyClosedCases.")
 
+        elif option == "USCISClosedCases":
+            pages_pil_images = convert_from_path(
+                str(pdf_filename),
+                thread_count=os.cpu_count(), # Use all CPU cores for conversion
+                dpi=80,
+                grayscale=True,
+                poppler_path=fr"{poppler_path}\bin" # IMPORTANT: Update this path!
+            )
+            current_pdf_family_pages = []
+            current_pdf_family_meta = {"name": "", "AlienNumber": "", "Phone": "", "CaseType":"", "main_pdf":pdf_filename, "main_folder_path":input_path}
+            current_pdf_page_numbers = []
+
+            for i, page_image in enumerate(pages_pil_images):
+                # Search for metadata on each page
+                if i == 0:  # Only set metadata on the first page
+                    print(f"Processing USCIS PDF: {pdf_filename}")
+                    model = process_page_optimized(page_image)
+                    # print(model)
+                    current_pdf_family_meta["name"] = search_in_doc_optimized(model, "USCIS", "name", option)
+                    current_pdf_family_meta["AlienNumber"] = search_in_doc_optimized(model, "USCIS", "alien_number", option)
+                    current_pdf_family_meta["Phone"] = search_in_doc_optimized(model, "USCIS", "phone", option)
+                    current_pdf_family_meta["CaseType"] = search_in_doc_optimized(model, "USCIS", "case_type", option)
+
+                    current_pdf_family_pages.append(page_image)
+                    current_pdf_page_numbers.append(f"page{i+1}")
+                    print(f"Processing page {i+1} - {pages} of {pdf_filename} for USCIS.")
+                    if current_pdf_family_meta["name"] is None:
+                        current_pdf_family_meta["name"] = str(uuid.uuid4())
+                        print(f"⚠️ No name found for USCIS PDF. Using UUID: {current_pdf_family_meta['name']}")
+                else: 
+                    current_pdf_family_pages.append(page_image)
+                    current_pdf_page_numbers.append(f"page{i+1}")
+                    print(f"Processing page {i+1} - {pages} of {pdf_filename} for USCIS.")
+
+            if current_pdf_family_pages:
+                # After processing all pages for this FamilyClosedCases PDF, merge them
+                merged_result = merge_pages_to_pdf(
+                    current_pdf_family_pages,
+                    current_pdf_family_meta,
+                    processed_path,
+                    option,
+                    current_pdf_page_numbers
+                )
+                if merged_result:
+                    results.append(merged_result)
+            else:
+                print(f"No pages collected for merging for {pdf_filename} in USCIS.")
+
         else:
             pages_as_bytes = []
             for i, page_image in enumerate(pages_pil_images):
@@ -531,7 +577,7 @@ def optimized_indexing(pdf_filename, option, input_path, processed_path, pages: 
                             used_key = similar_key if similar_key else result['key']
                             pending_merges.setdefault(used_key, {
                                 "pages":[], 
-                                "meta":{"name":result['name'], "AlienNumber":regex_alien_number(result['alien_number']), "CaseType":result['doc_type']},
+                                "meta":{"name":result['name'], "AlienNumber":regex_alien_number(result['alien_number']), "CaseType":result['doc_type'], "main_pdf":pdf_filename, "main_folder_path":input_path},
                                 "pages_number":[]
                             })
 
@@ -568,22 +614,23 @@ def optimized_indexing(pdf_filename, option, input_path, processed_path, pages: 
                             #         "A_x0020_Number":regex_alien_number(result['alien_number']), 
                             #         "pdf":result['pdf'],
                             #         "Case_x0020_Type":result['doc_type'],
-                            #         "folder_name":result['folder_name']
+                            #         "folder_name":result['folder_name'], 
+                            #         "main_pdf":pdf_filename,
+                            #         "main_folder_path":input_path
                             #     }
                             data = {
                                     "name":regex_name(result['name']), 
                                     "AlienNumber":regex_alien_number(result['alien_number']), 
                                     "pdf":result['pdf'],
                                     "CaseType":result['doc_type'],
-                                    "folder_name":result['folder_name']
+                                    "folder_name":result['folder_name'], 
+                                    "main_pdf":pdf_filename,
+                                    "main_folder_path":input_path
                                 }
                             results.append(data)
                     except Exception as e:
                         print(f"Error in parallel page processing for {pdf_filename}: {e}")
                         traceback.print_exc()
-        # Move the original PDF to the processed path after all its pages have been handled
-        # processed_path.mkdir(parents=True, exist_ok=True)
-        # shutil.move(pdf_filename, processed_path / pdf_filename)
         
         return [r for r in results if r is not None]
 
@@ -591,7 +638,6 @@ def optimized_indexing(pdf_filename, option, input_path, processed_path, pages: 
         print(f"Error en indexing para {pdf_filename}: {e}")
         traceback.print_exc()
         
-        # Move the problematic PDF to an "Errors" folder
         error_dir = input_path / "Errors"
         error_dir.mkdir(parents=True, exist_ok=True)
         shutil.move(pdf_filename, error_dir / pdf_filename)
