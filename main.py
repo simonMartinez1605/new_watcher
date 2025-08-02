@@ -142,7 +142,6 @@ class PDFMonitorGUI(QMainWindow):
                     new_pdf_data.append(pdf_info)
 
                 except Exception as e:
-                    # print(f"Error al obtener info del PDF {pdf_path}: {e}")
                     return None
             
             # Reemplazar la lista anterior con la nueva
@@ -228,11 +227,11 @@ class PDFMonitorGUI(QMainWindow):
                 
                 # Eliminar de la lista interna los archivos que ya no existen en la carpeta
                 files_in_folder = set(smbclient.listdir(folder))
-                with self.lock:
-                    to_remove = {p for p in self.found_pdfs if os.path.basename(p) not in files_in_folder}
-                    self.found_pdfs.difference_update(to_remove)
+                # with self.lock:
+                #     to_remove = {p for p in self.found_pdfs if os.path.basename(p) not in files_in_folder}
+                #     self.found_pdfs.difference_update(to_remove)
 
-                time.sleep(2)
+                # time.sleep(50)
             except Exception as e:
                 print(f"Error en monitor_folder: {e}")
                 time.sleep(30)
