@@ -35,12 +35,10 @@ class Json_table(QWidget):
         # Connect signals after initial setup
         self.table.itemSelectionChanged.connect(self.show_pdf_preview)
         self.table.itemChanged.connect(self.update_json_from_table)
-        self.prev_button.clicked.connect(self.show_previous_page)
-        self.next_button.clicked.connect(self.show_next_page)
         self.upload_button.clicked.connect(self.upload)
 
         # Set delegate for uppercase column
-        self.table.setItemDelegateForColumn(0, UpperCaseDelegate())
+        # self.table.setItemDelegateForColumn(0, UpperCaseDelegate())
 
     def init_ui(self):
         """Initializes the user interface."""
@@ -73,14 +71,10 @@ class Json_table(QWidget):
 
         # Navigation controls for PDF (buttons will be disabled as only first page is shown)
         self.navigation_layout = QHBoxLayout()
-        self.prev_button = QPushButton("Previous")
-        self.next_button = QPushButton("Next")
         self.page_counter_label = QLabel("Page 0 of 0")
         self.page_counter_label.setAlignment(Qt.AlignCenter)
 
-        self.navigation_layout.addWidget(self.prev_button)
         self.navigation_layout.addWidget(self.page_counter_label)
-        self.navigation_layout.addWidget(self.next_button)
         pdf_preview_layout.addLayout(self.navigation_layout)
 
         self.content_layout.addLayout(pdf_preview_layout, 1) # Use stretch factor 1 (equal to table)
@@ -104,69 +98,80 @@ class Json_table(QWidget):
         """)
         self.main_layout.addWidget(self.upload_button, alignment=Qt.AlignRight)
 
-    def load_data(self, data_list):
-        """Populates the QTableWidget with data."""
+    def load_data(self, data_list:list):
+        """Populates the QTableWidget with data using UserRole."""
         if not data_list:
             self.table.setRowCount(0)
             self.table.setColumnCount(0)
             return
 
-        self.headers = list(data_list[0].keys())
-        self.headers.append("open_pdf")
+        # 1. Define qué cabeceras quieres mostrar y cuáles son datos ocultos
+        all_keys = list(data_list[0].keys())
+        # Por ejemplo, no queremos mostrar 'pdf_path' o 'internal_id'
+        self.hidden_keys = ['main_pdf', 'main_folder_path', 'pdf']
+        self.display_headers = [h for h in all_keys if h not in self.hidden_keys]
+        self.display_headers.append("open_pdf") # Añadimos la columna del botón
 
-        self.table.setColumnCount(len(self.headers))
-        self.table.setHorizontalHeaderLabels(self.headers)
+        self.table.setColumnCount(len(self.display_headers))
+        self.table.setHorizontalHeaderLabels(self.display_headers)
         self.table.setRowCount(len(data_list))
 
-        for row_idx, item in enumerate(data_list):
-            for col_idx, key in enumerate(self.headers):
+        # Guardamos la lista original por si la necesitamos
+        self.original_data = data_list 
+
+        for row_idx, item_data in enumerate(data_list):
+            for col_idx, key in enumerate(self.display_headers):
                 if key == "open_pdf":
                     btn = QPushButton("Open PDF")
-                    btn.setStyleSheet("""
-                        QPushButton {
-                            background-color: #4CAF50;
-                            color: white;
-                            border: none;
-                            padding: 5px;
-                            border-radius: 3px;
-                        }
-                        QPushButton:hover {
-                            background-color: #45a049;
-                        }
-                    """)
-                    # Using functools.partial for cleaner signal connection if needed,
-                    # but lambda is fine here as well for simple cases.
+                    # ... (tu código de estilo para el botón) ...
+                    # Pasamos toda la data de la fila a la función del botón
                     btn.clicked.connect(lambda _, r=row_idx: self.open_pdf(r))
                     self.table.setCellWidget(row_idx, col_idx, btn)
                 else:
-                    table_item = QTableWidgetItem(str(item.get(key, ''))) # Use .get with default for robustness
-                    table_item.setFlags(table_item.flags() | Qt.ItemIsEditable)
+                    # Obtenemos el valor a mostrar
+                    value_to_display = str(item_data.get(key, ''))
+                    table_item = QTableWidgetItem(value_to_display)
+                    
+                    # 2. Adjuntamos los datos ocultos al item de la primera columna (o cualquiera)
+                    if col_idx == 0:
+                        for i, hidden_key in enumerate(self.hidden_keys):
+                            hidden_value = item_data.get(hidden_key)
+                            if hidden_value is not None:
+                                # Usamos Qt.UserRole + i para poder guardar varios datos
+                                table_item.setData(Qt.UserRole + i, hidden_value)
+
                     self.table.setItem(row_idx, col_idx, table_item)
 
-        self.table.resizeColumnsToContents()
-
-    def update_json_from_table(self, item):
-        """Updates the internal data (JSON) when a table item is edited."""
+    def update_json_from_table(self, item: QTableWidgetItem):
+        """Updates the internal data (self.original_data) when a table item is edited."""
         row = item.row()
         column = item.column()
-        key = self.headers[column]
+
+        # Usa self.display_headers para obtener la clave correcta
+        if column >= len(self.display_headers):
+            return # Evita errores si la columna está fuera de rango
+            
+        key = self.display_headers[column]
 
         if key == "open_pdf":
-            return
+            return # No hacer nada si se "edita" la columna del botón
 
         new_value = item.text()
-        # Attempt to convert to int or float if possible
         try:
-            if '.' in new_value: # Check for decimal point to assume float
+            # Tu lógica de conversión de tipo sigue siendo válida
+            if '.' in new_value:
                 new_value = float(new_value)
             else:
                 new_value = int(new_value)
         except ValueError:
-            pass # Keep as string if conversion fails
+            pass # Mantener como string si la conversión falla
 
-        self.data[row][key] = new_value
-        print(f"Update: Row {row + 1}, Column '{key}' => {new_value}")
-
+        # Actualiza la lista de diccionarios original
+        if row < len(self.original_data):
+            self.original_data[row][key] = new_value
+            print(f"✅ Datos actualizados: Fila {row}, Clave '{key}' -> Nuevo valor: {new_value}")
+            # print(self.original_data[row]) # Descomenta para ver el diccionar
+        
     def open_pdf(self, row):
         """Opens the PDF file associated with the selected row."""
         pdf_path = self.data[row]["pdf"]
@@ -184,6 +189,8 @@ class Json_table(QWidget):
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Can't open the file: {e}")
 
+    
+
     def show_pdf_preview(self):
         """Displays the first page of the PDF preview for the selected row and shows total pages."""
         selected_items = self.table.selectedItems()
@@ -194,7 +201,6 @@ class Json_table(QWidget):
             self.current_page_display = 0
             self.total_pages = 0
             self.update_page_counter()
-            self.update_navigation_buttons()
             return
 
         row = selected_items[0].row()
@@ -207,7 +213,6 @@ class Json_table(QWidget):
             self.current_page_display = 0
             self.total_pages = 0
             self.update_page_counter()
-            self.update_navigation_buttons()
             return
 
         # Optimization: Only process PDF if a different one is selected
@@ -244,7 +249,6 @@ class Json_table(QWidget):
             self.show_first_page_image()
 
         self.update_page_counter()
-        self.update_navigation_buttons()
 
     def show_first_page_image(self):
         """Displays the stored first page image of the current PDF preview."""
@@ -271,29 +275,10 @@ class Json_table(QWidget):
         except Exception as e:
             self.preview_label.setText(f"Error al procesar la imagen de la primera página:\n{str(e)}")
 
-    def show_previous_page(self):
-        """
-        These buttons are now effectively disabled as only the first page is shown.
-        You might want to hide them or remove them entirely if they serve no purpose.
-        """
-        pass # No action as only the first page is displayed
-
-    def show_next_page(self):
-        """
-        These buttons are now effectively disabled as only the first page is shown.
-        You might want to hide them or remove them entirely if they serve no purpose.
-        """
-        pass # No action as only the first page is displayed
-
     def update_page_counter(self):
         """Updates the page counter label."""
         # For preview, it will always show "Page 1 of X"
         self.page_counter_label.setText(f"Page {self.current_page_display + 1} of {self.total_pages}")
-
-    def update_navigation_buttons(self):
-        """Disables navigation buttons as only the first page is shown."""
-        self.prev_button.setEnabled(False)
-        self.next_button.setEnabled(False)
 
     def _scale_and_set_pixmap(self):
         """Helper to scale the pixmap to fit the preview label."""

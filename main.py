@@ -107,7 +107,6 @@ class PDFMonitorWorker(QObject):
                                     
                                     # Emitir la señal con los datos
                                     self.pdf_found.emit(pdf_info)
-                                    # self.pdf_data = new_pdf_data
                                     
                                 except Exception as e:
                                     print(f"Error procesando {pdf_path}: {e}")
